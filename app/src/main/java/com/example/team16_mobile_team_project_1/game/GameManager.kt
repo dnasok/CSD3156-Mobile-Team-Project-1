@@ -1,0 +1,147 @@
+package com.example.team16_mobile_team_project_1.game
+
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.random.Random
+
+// Data classes to hold the state of game objects
+data class PlayerState(val x: Float, val y: Float, val radius: Float = 25f)
+data class CannonState(val id: Int, val x: Float, val y: Float, val angle: Float)
+data class CannonballState(val id: Int, val x: Float, val y: Float, val velocityX: Float, val velocityY: Float, val radius: Float = 10f)
+
+// Sealed interface to represent the different states of the game
+sealed interface GameState {
+    object Ready : GameState
+    object Running : GameState
+    data class GameOver(val score: Long) : GameState
+}
+
+class GameManager : ViewModel() {
+
+    private val _gameState = MutableStateFlow<GameState>(GameState.Ready)
+    val gameState = _gameState.asStateFlow()
+
+    private val _playerState = MutableStateFlow(PlayerState(0f, 0f))
+    val playerState = _playerState.asStateFlow()
+
+    private val _cannons = MutableStateFlow<List<CannonState>>(emptyList())
+    val cannons = _cannons.asStateFlow()
+
+    private val _cannonballs = MutableStateFlow<List<CannonballState>>(emptyList())
+    val cannonballs = _cannonballs.asStateFlow()
+
+    val score = mutableStateOf(0L)
+    private var gameTime = 0L
+
+    // Screen dimensions, to be set from the UI
+    var screenWidth = 0f
+    var screenHeight = 0f
+
+    fun startGame() {
+        if (_gameState.value == GameState.Ready || _gameState.value is GameState.GameOver) {
+            _playerState.value = PlayerState(x = screenWidth / 2, y = screenHeight / 2)
+            _cannonballs.value = emptyList()
+            spawnCannons()
+            gameTime = 0
+            score.value = 0
+            _gameState.value = GameState.Running
+            viewModelScope.launch {
+                gameLoop()
+            }
+        }
+    }
+
+    private suspend fun gameLoop() {
+        while (_gameState.value == GameState.Running) {
+            delay(16) // Aim for ~60 FPS
+            gameTime += 16
+            score.value = gameTime / 100 // Score increases over time
+            
+            updateCannonballs()
+            fireCannons()
+            checkCollisions()
+            checkKillZone()
+        }
+    }
+
+    fun updatePlayerPosition(dx: Float, dy: Float) {
+        if (_gameState.value == GameState.Running) {
+            val newX = (_playerState.value.x + dx).coerceIn(0f, screenWidth)
+            val newY = (_playerState.value.y + dy).coerceIn(0f, screenHeight)
+            _playerState.value = _playerState.value.copy(x = newX, y = newY)
+        }
+    }
+
+    private fun spawnCannons() {
+        _cannons.value = listOf(
+            CannonState(id = 1, x = 50f, y = screenHeight / 2, angle = 0f), // Left
+            CannonState(id = 2, x = screenWidth - 50f, y = screenHeight / 2, angle = 180f), // Right
+            CannonState(id = 3, x = screenWidth / 2, y = 50f, angle = 90f), // Top
+            CannonState(id = 4, x = screenWidth / 2, y = screenHeight - 50f, angle = -90f)  // Bottom
+        )
+    }
+
+    private fun fireCannons() {
+        // Fire every 2 seconds
+        if (gameTime % 2000 < 16) {
+            val newCannonballs = _cannonballs.value.toMutableList()
+            _cannons.value.forEach { cannon ->
+                val angleRad = Math.toRadians(cannon.angle.toDouble()).toFloat()
+                val speed = 3f // pixels per frame
+                newCannonballs.add(
+                    CannonballState(
+                        id = Random.nextInt(),
+                        x = cannon.x,
+                        y = cannon.y,
+                        velocityX = cos(angleRad) * speed,
+                        velocityY = sin(angleRad) * speed
+                    )
+                )
+            }
+            _cannonballs.value = newCannonballs
+        }
+    }
+
+    private fun updateCannonballs() {
+        _cannonballs.value = _cannonballs.value
+            .map { it.copy(x = it.x + it.velocityX, y = it.y + it.velocityY) }
+            .filter { it.x > 0 && it.x < screenWidth && it.y > 0 && it.y < screenHeight }
+    }
+
+
+    private fun checkCollisions() {
+        val player = _playerState.value
+        _cannonballs.value.forEach { cannonball ->
+            val dx = player.x - cannonball.x
+            val dy = player.y - cannonball.y
+            val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+            if (distance < player.radius + cannonball.radius) {
+                endGame()
+                return@forEach
+            }
+        }
+    }
+
+    private fun checkKillZone() {
+        val player = _playerState.value
+        val killZone = 20f // 20 pixels from the edge
+        if (player.x < killZone || player.x > screenWidth - killZone ||
+            player.y < killZone || player.y > screenHeight - killZone
+        ) {
+            endGame()
+        }
+    }
+
+    private fun endGame() {
+        if (_gameState.value == GameState.Running) {
+            _gameState.value = GameState.GameOver(score.value)
+        }
+    }
+}
