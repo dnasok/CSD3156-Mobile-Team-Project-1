@@ -16,6 +16,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.background
+import androidx.compose.runtime.*
+import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.delay
+import kotlin.random.Random
+import com.example.team16_mobile_team_project_1.R
 
 @Composable
 fun GameScreen(
@@ -38,9 +47,43 @@ fun GameScreen(
     ) {
         when (val state = gameState) {
             is GameState.Ready -> {
+                // Background image
+                Image(
+                    painter = painterResource(id = R.drawable.menu_background),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Dark overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                )
+
+                MenuCannonballBackground(
+                    modifier = Modifier.fillMaxSize()
+                )
+
                 StartMenu(onStartClick = { gameManager.startGame() }, modifier = Modifier.align(Alignment.Center))
             }
             is GameState.Running -> {
+                // Background image
+                Image(
+                    painter = painterResource(id = R.drawable.game_background),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Darken for visibility
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.15f))
+                )
+
                 GameCanvas(playerState, cannons, cannonballs)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
@@ -53,6 +96,14 @@ fun GameScreen(
                 }
             }
             is GameState.GameOver -> {
+                // Background image
+                Image(
+                    painter = painterResource(id = R.drawable.gameover_background),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
                 GameOverMenu(
                     score = state.score,
                     onRestartClick = { gameManager.startGame() },
@@ -60,6 +111,14 @@ fun GameScreen(
                 )
             }
             is GameState.Paused -> {
+                // Background image
+                Image(
+                    painter = painterResource(id = R.drawable.pause_background),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
                 // Draw frozen game scene
                 GameCanvas(playerState, cannons, cannonballs)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
@@ -72,6 +131,21 @@ fun GameScreen(
                 )
             }
             is GameState.Countdown -> {
+                // Background image
+                Image(
+                    painter = painterResource(id = R.drawable.game_background),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Darken for visibility
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.15f))
+                )
+
                 // Draw frozen game scene behind
                 GameCanvas(playerState, cannons, cannonballs)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
@@ -111,7 +185,7 @@ fun GameCanvas(player: PlayerState, cannons: List<CannonState>, cannonballs: Lis
 @Composable
 fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        Text("Cannon Crossfire", fontSize = 32.sp)
+        Text("Cannon Crossfire", fontSize = 32.sp, color = Color.White)
         Button(onClick = onStartClick) {
             Text("Start Game")
         }
@@ -121,8 +195,8 @@ fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 fun GameOverMenu(score: Long, onRestartClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        Text("Game Over", fontSize = 32.sp)
-        Text("Your Score: $score", fontSize = 24.sp)
+        Text("Game Over", fontSize = 32.sp, color = Color.Red)
+        Text("Your Score: $score", fontSize = 24.sp, color = Color.White)
         Button(onClick = onRestartClick) {
             Text("Restart Game")
         }
@@ -141,5 +215,118 @@ fun PauseMenu(
         Button(onClick = onResume) { Text("Resume") }
         Button(onClick = onRestart) { Text("Restart") }
         Button(onClick = onQuit) { Text("Quit to Menu") }
+    }
+}
+
+private enum class Side { LEFT, RIGHT, TOP, BOTTOM }
+
+private data class MenuBall(
+    val side: Side,
+    val x: Float,
+    val y: Float,
+    val vx: Float,
+    val vy: Float,
+    val r: Float = 12f
+)
+
+@Composable
+fun MenuCannonballBackground(
+    modifier: Modifier = Modifier
+) {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+
+    val balls = remember { mutableStateListOf<MenuBall>() }
+
+    LaunchedEffect(size) {
+        if (size.width <= 0 || size.height <= 0) return@LaunchedEffect
+
+        balls.clear()
+        val w = size.width.toFloat()
+        val h = size.height.toFloat()
+
+        balls.add(spawnBall(Side.LEFT, w, h))
+        balls.add(spawnBall(Side.RIGHT, w, h))
+        balls.add(spawnBall(Side.TOP, w, h))
+        balls.add(spawnBall(Side.BOTTOM, w, h))
+
+        while (true) {
+            delay(16)
+
+            val w2 = size.width.toFloat()
+            val h2 = size.height.toFloat()
+
+            for (i in balls.indices) {
+                val b = balls[i]
+                val nx = b.x + b.vx
+                val ny = b.y + b.vy
+
+                val out =
+                    nx < -b.r * 3 || nx > w2 + b.r * 3 ||
+                            ny < -b.r * 3 || ny > h2 + b.r * 3
+
+                balls[i] = if (out) {
+                    spawnBall(b.side, w2, h2)
+                } else {
+                    b.copy(x = nx, y = ny)
+                }
+            }
+        }
+    }
+
+    Canvas(
+        modifier = modifier.onSizeChanged { size = it }
+    ) {
+        balls.forEach { b ->
+            drawCircle(
+                color = Color.DarkGray,
+                radius = b.r,
+                center = Offset(b.x, b.y)
+            )
+        }
+    }
+}
+
+private fun spawnBall(side: Side, w: Float, h: Float): MenuBall {
+    val r = 12f
+    val speed = 10f
+
+    return when (side) {
+        // From left/right, random Y
+        Side.LEFT -> MenuBall(
+            side = side,
+            x = -r,
+            y = Random.nextFloat() * h,
+            vx = speed,
+            vy = 0f,
+            r = r
+        )
+
+        Side.RIGHT -> MenuBall(
+            side = side,
+            x = w + r,
+            y = Random.nextFloat() * h,
+            vx = -speed,
+            vy = 0f,
+            r = r
+        )
+
+        // From top/bottom, random X
+        Side.TOP -> MenuBall(
+            side = side,
+            x = Random.nextFloat() * w,
+            y = -r,
+            vx = 0f,
+            vy = speed,
+            r = r
+        )
+
+        Side.BOTTOM -> MenuBall(
+            side = side,
+            x = Random.nextFloat() * w,
+            y = h + r,
+            vx = 0f,
+            vy = -speed,
+            r = r
+        )
     }
 }
