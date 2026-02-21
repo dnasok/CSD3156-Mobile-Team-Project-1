@@ -22,6 +22,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import com.example.team16_mobile_team_project_1.R
@@ -88,11 +93,19 @@ fun GameScreen(
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
                 // Pause button
-                Button(
-                    onClick = { gameManager.pauseGame() },
-                    modifier = Modifier.align(Alignment.TopEnd)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                        .width(50.dp)
+                        .height(50.dp)
+                        .clickable { gameManager.pauseGame() }
                 ) {
-                    Text("||")
+                    Text(
+                        text = "\u23F8", // pause icon
+                        modifier = Modifier.align(Alignment.Center),
+                        fontSize = 30.sp
+                    )
                 }
             }
             is GameState.GameOver -> {
@@ -186,8 +199,26 @@ fun GameCanvas(player: PlayerState, cannons: List<CannonState>, cannonballs: Lis
 fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Text("Cannon Crossfire", fontSize = 32.sp, color = Color.White)
-        Button(onClick = onStartClick) {
-            Text("Start Game")
+        // Start button
+        Box(
+            modifier = Modifier
+                .width(150.dp)
+                .height(50.dp)
+                .clickable { onStartClick() }
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.button),
+                contentDescription = "Start Game",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            Text(
+                text = "Start Game",
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black,
+                fontSize = 20.sp
+            )
         }
     }
 }
@@ -197,8 +228,26 @@ fun GameOverMenu(score: Long, onRestartClick: () -> Unit, modifier: Modifier = M
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Text("Game Over", fontSize = 32.sp, color = Color.Red)
         Text("Your Score: $score", fontSize = 24.sp, color = Color.White)
-        Button(onClick = onRestartClick) {
-            Text("Restart Game")
+        // Restart button
+        Box(
+            modifier = Modifier
+                .width(150.dp)
+                .height(50.dp)
+                .clickable { onRestartClick() }
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.button),
+                contentDescription = "Restart Game",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            Text(
+                text = "Restart Game",
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black,
+                fontSize = 18.sp
+            )
         }
     }
 }
@@ -211,10 +260,71 @@ fun PauseMenu(
     modifier: Modifier = Modifier
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        Text("Paused", fontSize = 32.sp)
-        Button(onClick = onResume) { Text("Resume") }
-        Button(onClick = onRestart) { Text("Restart") }
-        Button(onClick = onQuit) { Text("Quit to Menu") }
+        Text("Paused", fontSize = 32.sp, color = Color.White)
+
+        // Resume button
+        Box(
+            modifier = Modifier
+                .width(100.dp)
+                .height(30.dp)
+                .clickable { onResume() }
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.button),
+                contentDescription = "Resume Game",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            Text(
+                text = "Resume",
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black,
+                fontSize = 16.sp
+            )
+        }
+        // Restart button
+        Box(
+            modifier = Modifier
+                .width(100.dp)
+                .height(30.dp)
+                .clickable { onRestart() }
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.button),
+                contentDescription = "Restart Game",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            Text(
+                text = "Restart",
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black,
+                fontSize = 16.sp
+            )
+        }
+        // Quit button
+        Box(
+            modifier = Modifier
+                .width(100.dp)
+                .height(30.dp)
+                .clickable { onQuit() }
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.button),
+                contentDescription = "Quit Game",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            Text(
+                text = "Quit to Menu",
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black,
+                fontSize = 13.sp
+            )
+        }
     }
 }
 
