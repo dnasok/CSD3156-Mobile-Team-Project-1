@@ -43,11 +43,43 @@ fun GameScreen(
             is GameState.Running -> {
                 GameCanvas(playerState, cannons, cannonballs)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
+
+                // Pause button
+                Button(
+                    onClick = { gameManager.pauseGame() },
+                    modifier = Modifier.align(Alignment.TopEnd)
+                ) {
+                    Text("||")
+                }
             }
             is GameState.GameOver -> {
                 GameOverMenu(
                     score = state.score,
                     onRestartClick = { gameManager.startGame() },
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            is GameState.Paused -> {
+                // Draw frozen game scene
+                GameCanvas(playerState, cannons, cannonballs)
+                Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
+
+                PauseMenu(
+                    onResume = { gameManager.resumeGame() },
+                    onRestart = { gameManager.startGame() },
+                    onQuit = { gameManager.quitToMenu() },
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            is GameState.Countdown -> {
+                // Draw frozen game scene behind
+                GameCanvas(playerState, cannons, cannonballs)
+                Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
+
+                // Big countdown number in the middle
+                Text(
+                    text = state.number.toString(),
+                    fontSize = 96.sp,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -94,5 +126,20 @@ fun GameOverMenu(score: Long, onRestartClick: () -> Unit, modifier: Modifier = M
         Button(onClick = onRestartClick) {
             Text("Restart Game")
         }
+    }
+}
+
+@Composable
+fun PauseMenu(
+    onResume: () -> Unit,
+    onRestart: () -> Unit,
+    onQuit: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+        Text("Paused", fontSize = 32.sp)
+        Button(onClick = onResume) { Text("Resume") }
+        Button(onClick = onRestart) { Text("Restart") }
+        Button(onClick = onQuit) { Text("Quit to Menu") }
     }
 }

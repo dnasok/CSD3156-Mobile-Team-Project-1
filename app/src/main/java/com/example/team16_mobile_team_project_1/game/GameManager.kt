@@ -20,6 +20,8 @@ data class CannonballState(val id: Int, val x: Float, val y: Float, val velocity
 sealed interface GameState {
     object Ready : GameState
     object Running : GameState
+    object Paused : GameState // in game pause
+    data class Countdown(val number: Int) : GameState // count down for resume
     data class GameOver(val score: Long) : GameState
 }
 
@@ -45,7 +47,7 @@ class GameManager : ViewModel() {
     var screenHeight = 0f
 
     fun startGame() {
-        if (_gameState.value == GameState.Ready || _gameState.value is GameState.GameOver) {
+        if (_gameState.value !is GameState.Running) {
             _playerState.value = PlayerState(x = screenWidth / 2, y = screenHeight / 2)
             _cannonballs.value = emptyList()
             spawnCannons()
@@ -56,6 +58,32 @@ class GameManager : ViewModel() {
                 gameLoop()
             }
         }
+    }
+
+    // in game pause
+    fun pauseGame() {
+        if (_gameState.value == GameState.Running) {
+            _gameState.value = GameState.Paused
+        }
+    }
+
+    // in game resume after pausing
+    fun resumeGame() {
+        if (_gameState.value != GameState.Paused) return
+
+        viewModelScope.launch {
+            for (i in 3 downTo 1) {
+                _gameState.value = GameState.Countdown(i)
+                delay(1000)
+            }
+
+            _gameState.value = GameState.Running
+            gameLoop() // restart the loop after countdown
+        }
+    }
+
+    fun quitToMenu() {
+        _gameState.value = GameState.Ready
     }
 
     private suspend fun gameLoop() {

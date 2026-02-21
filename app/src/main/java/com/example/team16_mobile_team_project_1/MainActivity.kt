@@ -65,7 +65,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
             // Update player position via GameManager
             // Multiplying by a factor to make movement more noticeable
-            gameManager.updatePlayerPosition(dx = axisY * 5, dy = -axisX * 5)
+            if (gameManager.gameState.value is com.example.team16_mobile_team_project_1.game.GameState.Running) {
+                gameManager.updatePlayerPosition(dx = axisY * 5, dy = -axisX * 5)
+            }
         }
     }
 }
