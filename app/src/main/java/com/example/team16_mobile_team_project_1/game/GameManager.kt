@@ -12,7 +12,6 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 // Data classes to hold the state of game objects
-data class PlayerState(val x: Float, val y: Float, val radius: Float = 25f)
 data class CannonState(val id: Int, val x: Float, val y: Float, val angle: Float)
 data class CannonballState(val id: Int, val x: Float, val y: Float, val velocityX: Float, val velocityY: Float, val radius: Float = 10f)
 
@@ -30,8 +29,8 @@ class GameManager : ViewModel() {
     private val _gameState = MutableStateFlow<GameState>(GameState.Ready)
     val gameState = _gameState.asStateFlow()
 
-    private val _playerState = MutableStateFlow(PlayerState(0f, 0f))
-    val playerState = _playerState.asStateFlow()
+    private val _player = MutableStateFlow(Player(0f, 0f))
+    val player = _player.asStateFlow()
 
     private val _cannons = MutableStateFlow<List<CannonState>>(emptyList())
     val cannons = _cannons.asStateFlow()
@@ -42,13 +41,24 @@ class GameManager : ViewModel() {
     val score = mutableStateOf(0L)
     private var gameTime = 0L
 
+    private var accelX = 0f
+    private var accelY = 0f
+
     // Screen dimensions, to be set from the UI
     var screenWidth = 0f
+        set(value) {
+            field = value
+            Player.screenWidth = value.toInt()
+        }
     var screenHeight = 0f
+        set(value) {
+            field = value
+            Player.screenHeight = value.toInt()
+        }
 
     fun startGame() {
         if (_gameState.value !is GameState.Running) {
-            _playerState.value = PlayerState(x = screenWidth / 2, y = screenHeight / 2)
+            _player.value = Player(x = screenWidth / 2, y = screenHeight / 2)
             _cannonballs.value = emptyList()
             spawnCannons()
             gameTime = 0
@@ -91,7 +101,8 @@ class GameManager : ViewModel() {
             delay(16) // Aim for ~60 FPS
             gameTime += 16
             score.value = gameTime / 100 // Score increases over time
-            
+
+            _player.value.updatePosition(accelX, accelY)
             updateCannonballs()
             fireCannons()
             checkCollisions()
@@ -99,12 +110,9 @@ class GameManager : ViewModel() {
         }
     }
 
-    fun updatePlayerPosition(dx: Float, dy: Float) {
-        if (_gameState.value == GameState.Running) {
-            val newX = (_playerState.value.x + dx).coerceIn(0f, screenWidth)
-            val newY = (_playerState.value.y + dy).coerceIn(0f, screenHeight)
-            _playerState.value = _playerState.value.copy(x = newX, y = newY)
-        }
+    fun onSensorChanged(newAccelX: Float, newAccelY: Float) {
+        accelX = newAccelX
+        accelY = newAccelY
     }
 
     private fun spawnCannons() {
@@ -145,7 +153,7 @@ class GameManager : ViewModel() {
 
 
     private fun checkCollisions() {
-        val player = _playerState.value
+        val player = _player.value
         _cannonballs.value.forEach { cannonball ->
             val dx = player.x - cannonball.x
             val dy = player.y - cannonball.y
@@ -158,7 +166,7 @@ class GameManager : ViewModel() {
     }
 
     private fun checkKillZone() {
-        val player = _playerState.value
+        val player = _player.value
         val killZone = 20f // 20 pixels from the edge
         if (player.x < killZone || player.x > screenWidth - killZone ||
             player.y < killZone || player.y > screenHeight - killZone

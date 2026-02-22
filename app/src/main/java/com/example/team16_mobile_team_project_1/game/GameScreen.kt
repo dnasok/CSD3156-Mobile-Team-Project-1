@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -37,7 +36,7 @@ fun GameScreen(
     gameManager: GameManager = viewModel()
 ) {
     val gameState by gameManager.gameState.collectAsState()
-    val playerState by gameManager.playerState.collectAsState()
+    val player by gameManager.player.collectAsState()
     val cannons by gameManager.cannons.collectAsState()
     val cannonballs by gameManager.cannonballs.collectAsState()
     val score by gameManager.score
@@ -89,7 +88,7 @@ fun GameScreen(
                         .background(Color.Black.copy(alpha = 0.15f))
                 )
 
-                GameCanvas(playerState, cannons, cannonballs)
+                GameCanvas(player, cannons, cannonballs)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
                 // Pause button
@@ -133,7 +132,7 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene
-                GameCanvas(playerState, cannons, cannonballs)
+                GameCanvas(player, cannons, cannonballs)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
                 PauseMenu(
@@ -160,7 +159,7 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene behind
-                GameCanvas(playerState, cannons, cannonballs)
+                GameCanvas(player, cannons, cannonballs)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
                 // Big countdown number in the middle
@@ -175,7 +174,7 @@ fun GameScreen(
 }
 
 @Composable
-fun GameCanvas(player: PlayerState, cannons: List<CannonState>, cannonballs: List<CannonballState>) {
+fun GameCanvas(player: Player, cannons: List<CannonState>, cannonballs: List<CannonballState>) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         // Draw Kill Zone border
         drawRect(color = Color.Red, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20f))
