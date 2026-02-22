@@ -12,7 +12,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 // Data classes to hold the state of game objects
-data class CannonState(val id: Int, val x: Float, val y: Float, val angle: Float)
+data class CannonState(val id: Int, val x: Float, val y: Float, val angle: Float, var nextFireTime: Long = 0L)
 data class CannonballState(val id: Int, val x: Float, val y: Float, val velocityX: Float, val velocityY: Float, val radius: Float = 10f)
 
 // Sealed interface to represent the different states of the game
@@ -116,21 +116,47 @@ class GameManager : ViewModel() {
     }
 
     private fun spawnCannons() {
-        _cannons.value = listOf(
-            CannonState(id = 1, x = 50f, y = screenHeight / 2, angle = 0f), // Left
-            CannonState(id = 2, x = screenWidth - 50f, y = screenHeight / 2, angle = 180f), // Right
-            CannonState(id = 3, x = screenWidth / 2, y = 50f, angle = 90f), // Top
-            CannonState(id = 4, x = screenWidth / 2, y = screenHeight - 50f, angle = -90f)  // Bottom
-        )
+        val centerX = screenWidth / 2f
+        val centerY = screenHeight / 2f
+        val radius = 1300f // distance from center
+
+        val numberOfCannons = 8 // change this to spawn more/less
+
+        val cannons = mutableListOf<CannonState>()
+
+        for (i in 0 until numberOfCannons) {
+            val angleDegrees = (360f / numberOfCannons) * i
+            val angleRadians = Math.toRadians(angleDegrees.toDouble())
+
+            val x = centerX + (radius * kotlin.math.cos(angleRadians)).toFloat()
+            val y = centerY + (radius * kotlin.math.sin(angleRadians)).toFloat()
+
+            cannons.add(
+                CannonState(
+                    id = i + 1,
+                    x = x,
+                    y = y,
+                    angle = angleDegrees +180f, // makes cannon face outwar
+                    nextFireTime = Random.nextLong(0, 2000)
+
+            )
+            )
+        }
+
+        _cannons.value = cannons
     }
 
     private fun fireCannons() {
-        // Fire every 2 seconds
-        if (gameTime % 2000 < 16) {
-            val newCannonballs = _cannonballs.value.toMutableList()
-            _cannons.value.forEach { cannon ->
+
+        val newCannonballs = _cannonballs.value.toMutableList()
+
+        _cannons.value.forEach { cannon ->
+
+            if (gameTime >= cannon.nextFireTime) {
+
                 val angleRad = Math.toRadians(cannon.angle.toDouble()).toFloat()
-                val speed = 3f // pixels per frame
+                val speed = 3f
+
                 newCannonballs.add(
                     CannonballState(
                         id = Random.nextInt(),
@@ -140,15 +166,31 @@ class GameManager : ViewModel() {
                         velocityY = sin(angleRad) * speed
                     )
                 )
+
+                // Schedule next shot (random delay)
+                cannon.nextFireTime = gameTime + Random.nextLong(1000, 3000)
             }
-            _cannonballs.value = newCannonballs
         }
+
+        _cannonballs.value = newCannonballs
     }
 
     private fun updateCannonballs() {
+        val margin = 800f  // allow bullets outside screen before despawn
+
         _cannonballs.value = _cannonballs.value
             .map { it.copy(x = it.x + it.velocityX, y = it.y + it.velocityY) }
+            .filter {
+                it.x > -margin &&
+                        it.x < screenWidth + margin &&
+                        it.y > -margin &&
+                        it.y < screenHeight + margin
+            }
+
+        /*_cannonballs.value = _cannonballs.value
+            .map { it.copy(x = it.x + it.velocityX, y = it.y + it.velocityY) }
             .filter { it.x > 0 && it.x < screenWidth && it.y > 0 && it.y < screenHeight }
+         */
     }
 
 
