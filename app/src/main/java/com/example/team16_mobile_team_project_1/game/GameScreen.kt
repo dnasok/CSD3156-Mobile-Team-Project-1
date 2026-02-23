@@ -162,7 +162,9 @@ fun GameScreen(
                 )
                 Text(
                     "Score: $score",
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 24.dp),
                     color = Color.DarkGray,
                     fontSize = 20.sp
                 )
@@ -244,7 +246,10 @@ fun GameScreen(
                 )
                 Text(
                     "Score: $score",
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 24.dp),
+                    color = Color.DarkGray,
                     fontSize = 24.sp
                 )
 
@@ -294,7 +299,10 @@ fun GameScreen(
                 )
                 Text(
                     "Score: $score",
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 24.dp),
+                    color = Color.DarkGray,
                     fontSize = 24.sp
                 )
 
@@ -302,7 +310,8 @@ fun GameScreen(
                 Text(
                     text = state.number.toString(),
                     fontSize = 96.sp,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.DarkGray
                 )
             }
         }
