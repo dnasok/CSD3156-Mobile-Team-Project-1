@@ -1,7 +1,6 @@
-package com.example.team16_mobile_team_project_1
+package com.example.team16_mobile_team_project_1.database
 
-import com.example.team16_mobile_team_project_1.database.HighScore
-import com.example.team16_mobile_team_project_1.database.HighScoreDao
+import android.util.Log
 import com.example.team16_mobile_team_project_1.network.ApiService
 import com.example.team16_mobile_team_project_1.network.OnlineScore
 import kotlinx.coroutines.flow.Flow
@@ -16,9 +15,10 @@ class ScoreRepository(private val highScoreDao: HighScoreDao, private val apiSer
 
     suspend fun getOnlineLeaderboard(): List<OnlineScore> {
         return try {
-            apiService.getLeaderboard()
+            apiService.getLeaderboard().sortedByDescending { it.score }.take(5)
         } catch (e: Exception) {
             // Handle network errors, maybe return an empty list
+            Log.e("ScoreRepository","Failed to fetch online leaderboard",e)
             emptyList()
         }
     }

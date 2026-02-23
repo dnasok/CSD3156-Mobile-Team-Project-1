@@ -1,17 +1,24 @@
 package com.example.team16_mobile_team_project_1.game
 
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -28,28 +35,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.team16_mobile_team_project_1.R
+import com.example.team16_mobile_team_project_1.network.OnlineScore
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 @Composable
 fun GameScreen(
     modifier: Modifier = Modifier,
-    gameManager: GameManager = viewModel()
+//    factory: GameManagerFactory,
+    gameManager: GameManager
 ) {
+//    val gameManager: GameManager = viewModel(factory = factory)
+
     val gameState by gameManager.gameState.collectAsState()
     val player by gameManager.player.collectAsState()
     val cannons by gameManager.cannons.collectAsState()
     val cannonballs by gameManager.cannonballs.collectAsState()
-    val score by gameManager.score
+    val score = gameManager.score
+    val onlineLeaderboard by gameManager.onlineLeaderboard.collectAsState()
 
     val context = LocalContext.current
 
@@ -163,6 +177,8 @@ fun GameScreen(
             }
 
             is GameState.GameOver -> {
+                val highScore by gameManager.highScore.collectAsState(initial = 0)
+
                 // Background image
                 Image(
                     painter = painterResource(id = R.drawable.gameover_background),
@@ -171,12 +187,21 @@ fun GameScreen(
                     modifier = Modifier.fillMaxSize()
                 )
 
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                )
+
                 GameOverMenu(
+                    onlineLeaderboard = onlineLeaderboard,
                     score = state.score,
+                    highScore = highScore,
                     onRestartClick = {
                         gameManager.startGame()
                         AudioManager.playSound(AudioManager.Sound.SELECT)
                     },
+                    onSubmitScore = { playerName -> gameManager.submitScore(playerName) },
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -337,30 +362,94 @@ fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun GameOverMenu(score: Long, onRestartClick: () -> Unit, modifier: Modifier = Modifier) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        Text("Game Over", fontSize = 32.sp, color = Color.Red)
-        Text("Your Score: $score", fontSize = 24.sp, color = Color.White)
-        // Restart button
-        Box(
-            modifier = Modifier
-                .width(150.dp)
-                .height(50.dp)
-                .clickable { onRestartClick() }
+fun GameOverMenu(onlineLeaderboard: List<OnlineScore>
+                 ,score: Long
+                 , highScore: Long
+                 , onRestartClick: () -> Unit
+                 , onSubmitScore: (String) -> Unit
+                 , modifier: Modifier = Modifier) {
+
+    var playerName by remember { mutableStateOf("Player") }
+    val isNewHighScore = score > highScore
+    Log.d("GameScreen", "Game Over Menu: Score: $score, High Score: $highScore, New High Score: $isNewHighScore")
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier,) {
+        Text("Game Over", fontSize = 48.sp, color = Color.Red, fontWeight = FontWeight.Bold)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.button),
-                contentDescription = "Restart Game",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
+            Text(
+                "Top 5 Players",
+                fontSize = 22.sp,
+                color = Color.Yellow,
+                fontWeight = FontWeight.Bold
+            )
+            onlineLeaderboard.forEachIndexed { index, score ->
+                Row(
+                    modifier = Modifier.width(200.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                )
+                {
+                    Text(
+                        text = "${index + 1}. ${score.playerName}",
+                        color = Color.White,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = score.score.toString(),
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        Text("Your Current Score: $score", fontSize = 28.sp, color = Color.White)
+
+        // leaderboard submission UI
+        if(isNewHighScore){
+            Text("New High Score!", fontSize = 24.sp, color = Color.Yellow)
+
+            OutlinedTextField(
+                value = playerName,
+                onValueChange = { playerName = it},
+                label = { Text("Enter your name") },
+                singleLine = true
             )
 
-            Text(
-                text = "Restart Game",
-                modifier = Modifier.align(Alignment.Center),
-                color = Color.Black,
-                fontSize = 18.sp
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Button(onClick = { onSubmitScore(playerName)}) {
+                    Text("Submit Score")
+                }
+                Button(onClick = onRestartClick) {
+                    Text("Cancel")
+                }
+            }
+        } else {
+            // Restart button
+            Box(
+                modifier = Modifier
+                    .width(150.dp)
+                    .height(50.dp)
+                    .clickable { onRestartClick() }
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.button),
+                    contentDescription = "Restart Game",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds
+                )
+
+                Text(
+                    text = "Restart Game",
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.Black,
+                    fontSize = 18.sp
+                )
+            }
         }
     }
 }

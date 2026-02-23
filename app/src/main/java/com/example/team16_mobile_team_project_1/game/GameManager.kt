@@ -1,11 +1,22 @@
 package com.example.team16_mobile_team_project_1.game
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.team16_mobile_team_project_1.database.ScoreRepository
+import com.example.team16_mobile_team_project_1.network.OnlineScore
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
@@ -39,7 +50,7 @@ sealed interface GameState {
     data class GameOver(val score: Long) : GameState
 }
 
-class GameManager : ViewModel() {
+class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
 
     private val _gameState = MutableStateFlow<GameState>(GameState.Ready)
     val gameState = _gameState.asStateFlow()
@@ -53,7 +64,22 @@ class GameManager : ViewModel() {
     private val _cannonballs = MutableStateFlow<List<CannonballState>>(emptyList())
     val cannonballs = _cannonballs.asStateFlow()
 
-    val score = mutableStateOf(0L)
+    private val _score = mutableLongStateOf(0L)
+    val score: Long by _score
+
+    private var finalScore: Long = 0L
+
+    private val _onlineLeaderboard = MutableStateFlow<List<OnlineScore>>(emptyList())
+    val onlineLeaderboard: StateFlow<List<OnlineScore>> = _onlineLeaderboard.asStateFlow()
+
+    val highScore: Flow<Long> = scoreRepository.getLocalHighScore()
+        .map { highScoreEntity -> highScoreEntity?.score?.toLong() ?: 0L }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0L
+        )
+
     private var gameTime = 0L
 
     private var accelX = 0f
@@ -74,10 +100,20 @@ class GameManager : ViewModel() {
             Player.screenHeight = value.toInt()
         }
 
+    init {
+        fetchOnlineLeaderboard()
+    }
+
+    fun fetchOnlineLeaderboard() {
+        viewModelScope.launch {
+            _onlineLeaderboard.value = scoreRepository.getOnlineLeaderboard()
+        }
+    }
+
     fun startGame() {
         if (_gameState.value !is GameState.Running) {
             gameTime = 0
-            score.value = 0
+            _score.longValue = 0
             _player.value = Player(x = screenWidth / 2, y = screenHeight / 2)
             _cannonballs.value = emptyList()
             nextCannonId = 0
@@ -120,7 +156,7 @@ class GameManager : ViewModel() {
         while (_gameState.value == GameState.Running) {
             delay(16) // Aim for ~60 FPS
             gameTime += 16
-            score.value = gameTime / 100 // Score increases over time
+            _score.longValue = gameTime / 100 // Score increases over time
 
             _player.value.updatePosition(accelX, accelY)
             updateCannonballs()
@@ -284,7 +320,24 @@ class GameManager : ViewModel() {
 
     private fun endGame() {
         if (_gameState.value == GameState.Running) {
-            _gameState.value = GameState.GameOver(score.value)
+//            _gameState.value = GameState.GameOver(score.value)
+            finalScore = _score.longValue
+
+            _gameState.value = GameState.GameOver(finalScore)
+
+            viewModelScope.launch {
+                val currentHighScore = highScore.firstOrNull() ?: 0L
+                if (finalScore > currentHighScore) {
+                    scoreRepository.saveLocalHighScore(finalScore.toInt())
+                }
+            }
+        }
+    }
+
+    fun submitScore(playerName: String) {
+        viewModelScope.launch {
+            scoreRepository.submitOnlineScore(playerName, finalScore.toInt())
+            quitToMenu()
         }
     }
 }
