@@ -27,10 +27,3 @@ data class Cannonball(
     val velocityY: Float,
     val radius: Float = 15f
 )
-
-@Composable
-fun CannonView(x: Float, y: Float) {
-    Canvas(modifier = Modifier.size(50.dp)) {
-        drawRect(color = Color.Red, topLeft = Offset(x, y), size = size)
-    }
-}
