@@ -1,8 +1,5 @@
 package com.example.team16_mobile_team_project_1.game
 
-import com.example.team16_mobile_team_project_1.game.Player.Companion.screenHeight
-import com.example.team16_mobile_team_project_1.game.Player.Companion.screenWidth
-
 data class Player(
     var x: Float,
     var y: Float,

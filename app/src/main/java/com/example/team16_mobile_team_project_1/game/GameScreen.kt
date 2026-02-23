@@ -30,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -126,7 +125,8 @@ fun GameScreen(
                 )
 
                 MenuCannonballBackground(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    cannonballImage = cannonballImage
                 )
 
                 StartMenu(onStartClick = {
@@ -622,7 +622,8 @@ private data class MenuBall(
 
 @Composable
 fun MenuCannonballBackground(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cannonballImage: ImageBitmap
 ) {
     var size by remember { mutableStateOf(IntSize.Zero) }
 
@@ -668,10 +669,16 @@ fun MenuCannonballBackground(
         modifier = modifier.onSizeChanged { size = it }
     ) {
         balls.forEach { b ->
-            drawCircle(
-                color = Color.DarkGray,
-                radius = b.r,
-                center = Offset(b.x, b.y)
+            drawImage(
+                image = cannonballImage,
+                dstOffset = IntOffset(
+                    (b.x - b.r).toInt(),
+                    (b.y - b.r).toInt()
+                ),
+                dstSize = IntSize(
+                    (b.r * 2).toInt(),
+                    (b.r * 2).toInt()
+                )
             )
         }
     }

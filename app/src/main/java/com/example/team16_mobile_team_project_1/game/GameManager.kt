@@ -3,6 +3,7 @@ package com.example.team16_mobile_team_project_1.game
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.team16_mobile_team_project_1.database.ScoreRepository
@@ -172,7 +173,7 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
     private fun spawnInitialCannons() {
         val initialCannons = 7
         val cannons = mutableListOf<Cannon>()
-        for (i in 0 until initialCannons) {
+        repeat(initialCannons) {
             cannons.add(spawnSingleCannon())
         }
         _cannons.value = cannons
@@ -263,7 +264,7 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
         val newCannonballs = _cannonballs.value
             .map { it.copy(x = it.x + it.velocityX, y = it.y + it.velocityY) }
             .filter { cb ->
-                val despawned = cb.x < 0 || cb.x > screenWidth || cb.y < 0 || cb.y > screenHeight
+                val despawned = cb.x !in 0f..screenWidth || cb.y !in 0f..screenHeight
                 if (despawned) {
                     // When a cannonball is despawned, remove the cannon that fired it and spawn a new one
                     val newCannons = _cannons.value.toMutableList()
@@ -330,9 +331,9 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
 
     private fun checkKillZone() {
         val player = _player.value
-        val killZone = 10f
-        if (player.x < killZone || player.x > screenWidth - killZone ||
-            player.y < killZone || player.y > screenHeight - killZone
+        val killZone = player.radius
+        if (player.x !in killZone..(screenWidth - killZone) ||
+            player.y !in killZone..(screenHeight - killZone)
         ) {
             AudioManager.playSound(AudioManager.Sound.HIT)
             endGame()

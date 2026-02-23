@@ -1,13 +1,5 @@
 package com.example.team16_mobile_team_project_1.game
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-
 // Data classes to hold the state of game objects
 data class Cannon(
     val id: Int,
@@ -27,10 +19,3 @@ data class Cannonball(
     val velocityY: Float,
     val radius: Float = 15f
 )
-
-@Composable
-fun CannonView(x: Float, y: Float) {
-    Canvas(modifier = Modifier.size(50.dp)) {
-        drawRect(color = Color.Red, topLeft = Offset(x, y), size = size)
-    }
-}
