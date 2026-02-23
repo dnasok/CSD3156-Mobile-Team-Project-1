@@ -6,7 +6,7 @@ import com.example.team16_mobile_team_project_1.game.Player.Companion.screenWidt
 data class Player(
     var x: Float,
     var y: Float,
-    val radius: Float = 25f,
+    val radius: Float = 37.5f,
     private var velX: Float = 0f,
     private var velY: Float = 0f
 ) {

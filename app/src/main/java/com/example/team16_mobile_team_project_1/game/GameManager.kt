@@ -28,6 +28,7 @@ data class CannonState(
     val x: Float,
     val y: Float,
     val angle: Float,
+    val radius: Float = 37.5f,
     var nextFireTime: Long = 0L
 )
 
@@ -38,7 +39,7 @@ data class CannonballState(
     val y: Float,
     val velocityX: Float,
     val velocityY: Float,
-    val radius: Float = 10f
+    val radius: Float = 15f
 )
 
 // Sealed interface to represent the different states of the game
@@ -64,6 +65,9 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
     private val _cannonballs = MutableStateFlow<List<CannonballState>>(emptyList())
     val cannonballs = _cannonballs.asStateFlow()
 
+    private val _coin = MutableStateFlow<Coin?>(null)
+    val coin = _coin.asStateFlow()
+
     private val _score = mutableLongStateOf(0L)
     val score: Long by _score
 
@@ -81,6 +85,7 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
         )
 
     private var gameTime = 0L
+    private var lastScoreUpdateTime = 0L
 
     private var accelX = 0f
     private var accelY = 0f
@@ -114,10 +119,12 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
         if (_gameState.value !is GameState.Running) {
             gameTime = 0
             _score.longValue = 0
+            lastScoreUpdateTime = 0L
             _player.value = Player(x = screenWidth / 2, y = screenHeight / 2)
             _cannonballs.value = emptyList()
             nextCannonId = 0
             spawnInitialCannons()
+            spawnCoin()
             nextCannonSpawnTime = 5000L // First new cannon after 5 seconds
             _gameState.value = GameState.Running
             viewModelScope.launch {
@@ -156,14 +163,27 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
         while (_gameState.value == GameState.Running) {
             delay(16) // Aim for ~60 FPS
             gameTime += 16
-            _score.longValue = gameTime / 100 // Score increases over time
+            // Score increases over time
+            if (gameTime - lastScoreUpdateTime >= 100) {
+                _score.longValue += 1
+                lastScoreUpdateTime = gameTime
+            }
 
             _player.value.updatePosition(accelX, accelY)
+
             updateCannonballs()
             fireCannons()
             spawnMoreCannons()
-            checkCollisions()
-            checkKillZone()
+
+            if (_gameState.value == GameState.Running) {
+                checkCollisions()
+            }
+            if (_gameState.value == GameState.Running) {
+                checkCoinCollision()
+            }
+            if (_gameState.value == GameState.Running) {
+                checkKillZone()
+            }
         }
     }
 
@@ -184,7 +204,7 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
     private fun spawnSingleCannon(): CannonState {
         val centerX = screenWidth / 2f
         val centerY = screenHeight / 2f
-        val cannonRadius = 25f // Half of the cannon image size (50)
+        val cannonRadius = 37.5f
 
         val side = Random.nextInt(4)
         val x: Float
@@ -220,6 +240,7 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
             x = x,
             y = y,
             angle = angleToCenter,
+            radius = cannonRadius,
             nextFireTime = gameTime + Random.nextLong(1000, 3000)
         )
     }
@@ -307,9 +328,31 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
         }
     }
 
+    private fun spawnCoin() {
+        val padding = 75f
+        val x = Random.nextFloat() * (screenWidth - padding * 2) + padding
+        val y = Random.nextFloat() * (screenHeight - padding * 2) + padding
+        _coin.value = Coin(x, y)
+    }
+
+    private fun checkCoinCollision() {
+        _coin.value?.let { coin ->
+            val player = _player.value
+            val dx = player.x - coin.x
+            val dy = player.y - coin.y
+            val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+            if (distance < player.radius + coin.radius) {
+                _score.longValue += 50
+                _coin.value = null
+                AudioManager.playSound(AudioManager.Sound.COIN)
+                spawnCoin()
+            }
+        }
+    }
+
     private fun checkKillZone() {
         val player = _player.value
-        val killZone = 10f // 10 pixels from the edge
+        val killZone = 10f
         if (player.x < killZone || player.x > screenWidth - killZone ||
             player.y < killZone || player.y > screenHeight - killZone
         ) {
