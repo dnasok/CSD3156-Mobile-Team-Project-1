@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,6 +52,27 @@ fun GameScreen(
     val score by gameManager.score
 
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        AudioManager.initialize(context)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            AudioManager.release()
+        }
+    }
+
+    LaunchedEffect(gameState) {
+        when (gameState) {
+            is GameState.Ready, is GameState.GameOver, is GameState.Paused -> AudioManager.playMenuMusic(
+                context
+            )
+
+            is GameState.Running, is GameState.Countdown -> AudioManager.playGameMusic(context)
+        }
+    }
+
     val playerImage = remember {
         BitmapFactory.decodeResource(context.resources, R.drawable.player).asImageBitmap()
     }
@@ -90,8 +112,12 @@ fun GameScreen(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                StartMenu(onStartClick = { gameManager.startGame() }, modifier = Modifier.align(Alignment.Center))
+                StartMenu(onStartClick = {
+                    gameManager.startGame()
+                    AudioManager.playSound(AudioManager.Sound.SELECT)
+                }, modifier = Modifier.align(Alignment.Center))
             }
+
             is GameState.Running -> {
                 // Background image
                 Image(
@@ -109,7 +135,12 @@ fun GameScreen(
                 )
 
                 GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
-                Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
+                Text(
+                    "Score: $score",
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    color = Color.DarkGray,
+                    fontSize = 20.sp
+                )
 
                 // Pause button
                 Box(
@@ -118,7 +149,10 @@ fun GameScreen(
                         .padding(10.dp)
                         .width(50.dp)
                         .height(50.dp)
-                        .clickable { gameManager.pauseGame() }
+                        .clickable {
+                            gameManager.pauseGame()
+                            AudioManager.playSound(AudioManager.Sound.SELECT)
+                        }
                 ) {
                     Text(
                         text = "⏸", // pause icon
@@ -127,6 +161,7 @@ fun GameScreen(
                     )
                 }
             }
+
             is GameState.GameOver -> {
                 // Background image
                 Image(
@@ -138,10 +173,14 @@ fun GameScreen(
 
                 GameOverMenu(
                     score = state.score,
-                    onRestartClick = { gameManager.startGame() },
+                    onRestartClick = {
+                        gameManager.startGame()
+                        AudioManager.playSound(AudioManager.Sound.SELECT)
+                    },
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
+
             is GameState.Paused -> {
                 // Background image
                 Image(
@@ -153,15 +192,29 @@ fun GameScreen(
 
                 // Draw frozen game scene
                 GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
-                Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
+                Text(
+                    "Score: $score",
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    fontSize = 24.sp
+                )
 
                 PauseMenu(
-                    onResume = { gameManager.resumeGame() },
-                    onRestart = { gameManager.startGame() },
-                    onQuit = { gameManager.quitToMenu() },
+                    onResume = {
+                        gameManager.resumeGame()
+                        AudioManager.playSound(AudioManager.Sound.SELECT)
+                    },
+                    onRestart = {
+                        gameManager.startGame()
+                        AudioManager.playSound(AudioManager.Sound.SELECT)
+                    },
+                    onQuit = {
+                        gameManager.quitToMenu()
+                        AudioManager.playSound(AudioManager.Sound.SELECT)
+                    },
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
+
             is GameState.Countdown -> {
                 // Background image
                 Image(
@@ -180,7 +233,11 @@ fun GameScreen(
 
                 // Draw frozen game scene behind
                 GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
-                Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
+                Text(
+                    "Score: $score",
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    fontSize = 24.sp
+                )
 
                 // Big countdown number in the middle
                 Text(
@@ -204,7 +261,10 @@ fun GameCanvas(
 ) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         // Draw Kill Zone border
-        drawRect(color = Color.Red, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20f))
+        drawRect(
+            color = Color.Red,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20f)
+        )
 
         // Draw Player
         drawImage(

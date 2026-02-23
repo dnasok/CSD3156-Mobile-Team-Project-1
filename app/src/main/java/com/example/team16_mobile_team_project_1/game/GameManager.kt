@@ -208,6 +208,7 @@ class GameManager : ViewModel() {
                 )
 
                 cannon.nextFireTime = Long.MAX_VALUE // Prevent this cannon from firing again
+                AudioManager.playSound(AudioManager.Sound.SHOOT)
             }
         }
         _cannonballs.value = newCannonballs
@@ -258,6 +259,7 @@ class GameManager : ViewModel() {
                 newCannons.removeAll { it.id == cannonball.cannonId }
                 newCannons.add(spawnSingleCannon())
                 _cannons.value = newCannons
+                AudioManager.playSound(AudioManager.Sound.HIT)
                 endGame()
                 collisionOccurred = true
                 break
@@ -275,6 +277,7 @@ class GameManager : ViewModel() {
         if (player.x < killZone || player.x > screenWidth - killZone ||
             player.y < killZone || player.y > screenHeight - killZone
         ) {
+            AudioManager.playSound(AudioManager.Sound.HIT)
             endGame()
         }
     }
