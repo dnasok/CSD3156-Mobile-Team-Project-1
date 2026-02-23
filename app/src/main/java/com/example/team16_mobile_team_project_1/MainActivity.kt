@@ -15,9 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.team16_mobile_team_project_1.database.AppDatabase
 import com.example.team16_mobile_team_project_1.database.ScoreRepository
+import com.example.team16_mobile_team_project_1.game.AudioManager
 import com.example.team16_mobile_team_project_1.game.GameManager
 import com.example.team16_mobile_team_project_1.game.GameManagerFactory
 import com.example.team16_mobile_team_project_1.game.GameScreen
+import com.example.team16_mobile_team_project_1.game.GameState
 import com.example.team16_mobile_team_project_1.network.RetrofitInstance
 import com.example.team16_mobile_team_project_1.ui.theme.Team16_Mobile_Team_Project_1Theme
 
@@ -59,11 +61,20 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         accelerometer?.also { accel ->
             sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)
         }
+        gameManager?.let {
+            if (it.gameState.value is GameState.Running) {
+                AudioManager.playGameMusic(this)
+            } else {
+                AudioManager.playMenuMusic(this)
+            }
+        }
     }
 
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(this)
+        gameManager?.pauseGame()
+        AudioManager.stopMusic()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -76,7 +87,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 val accelX = event.values[0]
                 val accelY = event.values[1]
 
-                if (manager.gameState.value is com.example.team16_mobile_team_project_1.game.GameState.Running) {
+                if (manager.gameState.value is GameState.Running) {
                     manager.onSensorChanged(newAccelX = accelX, newAccelY = accelY)
                 }
             }
