@@ -10,8 +10,8 @@ object AudioManager {
     private var soundPool: SoundPool? = null
     private var mediaPlayer: MediaPlayer? = null
     private var isInitialized = false
-
     private val soundMap = mutableMapOf<Sound, Int>()
+    private var isMusicPausedByLifecycle = false
 
     enum class Sound {
         HIT, SELECT, SHOOT, COIN
@@ -19,22 +19,18 @@ object AudioManager {
 
     fun initialize(context: Context) {
         if (isInitialized) return
-
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
-
         soundPool = SoundPool.Builder()
             .setMaxStreams(5)
             .setAudioAttributes(audioAttributes)
             .build()
-
         soundMap[Sound.HIT] = soundPool?.load(context, R.raw.sfx_hit, 1) ?: 0
         soundMap[Sound.SELECT] = soundPool?.load(context, R.raw.sfx_select, 1) ?: 0
         soundMap[Sound.SHOOT] = soundPool?.load(context, R.raw.sfx_shoot, 1) ?: 0
         soundMap[Sound.COIN] = soundPool?.load(context, R.raw.sfx_coin, 1) ?: 0
-
         isInitialized = true
     }
 
@@ -48,10 +44,7 @@ object AudioManager {
     }
 
     fun playMenuMusic(context: Context) {
-        if (mediaPlayer?.isPlaying == true) {
-            // Avoid restarting if music is already playing
-            return
-        }
+        if (isMusicPausedByLifecycle) return
         stopMusic()
         mediaPlayer = MediaPlayer.create(context, R.raw.bgm_menu).apply {
             isLooping = true
@@ -60,6 +53,7 @@ object AudioManager {
     }
 
     fun playGameMusic(context: Context) {
+        if (isMusicPausedByLifecycle) return
         stopMusic()
         mediaPlayer = MediaPlayer.create(context, R.raw.bgm_game).apply {
             isLooping = true
@@ -71,6 +65,19 @@ object AudioManager {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+    }
+
+    fun pauseMusicForLifecycle() {
+        isMusicPausedByLifecycle = true
+        stopMusic()
+    }
+
+    fun resumeMusicForLifecycle(context: Context, gameState: GameState) {
+        isMusicPausedByLifecycle = false
+        when (gameState) {
+            is GameState.Running, is GameState.Countdown -> playGameMusic(context)
+            else -> playMenuMusic(context)
+        }
     }
 
     fun release() {

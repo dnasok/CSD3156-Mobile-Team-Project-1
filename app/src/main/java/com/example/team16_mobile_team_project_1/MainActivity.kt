@@ -24,7 +24,6 @@ import com.example.team16_mobile_team_project_1.network.RetrofitInstance
 import com.example.team16_mobile_team_project_1.ui.theme.Team16_Mobile_Team_Project_1Theme
 
 class MainActivity : ComponentActivity(), SensorEventListener {
-    //    private val gameManager by viewModels<GameManager>()
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var gameManager: GameManager? = null
@@ -62,11 +61,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)
         }
         gameManager?.let {
-            if (it.gameState.value is GameState.Running) {
-                AudioManager.playGameMusic(this)
-            } else {
-                AudioManager.playMenuMusic(this)
-            }
+            AudioManager.resumeMusicForLifecycle(this, it.gameState.value)
         }
     }
 
@@ -74,7 +69,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         super.onPause()
         sensorManager.unregisterListener(this)
         gameManager?.pauseGame()
-        AudioManager.stopMusic()
+        AudioManager.pauseMusicForLifecycle()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
