@@ -107,6 +107,12 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
             nextCannonSpawnTime = 5000L // First new cannon after 5 seconds
             _gameState.value = GameState.Running
             viewModelScope.launch {
+                for (i in 3 downTo 1) {
+                    _gameState.value = GameState.Countdown(i)
+                    delay(1000)
+                }
+
+                _gameState.value = GameState.Running
                 gameLoop()
             }
         }
