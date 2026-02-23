@@ -500,11 +500,45 @@ fun GameOverMenu(onlineLeaderboard: List<OnlineScore>
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = { onSubmitScore(playerName)}) {
-                    Text("Submit Score")
+                Box(
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(30.dp)
+                        .clickable { onSubmitScore(playerName) }
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.button),
+                        contentDescription = "Submit Score",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.FillBounds
+                    )
+
+                    Text(
+                        text = "Submit Score",
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color.Black,
+                        fontSize = 12.sp
+                    )
                 }
-                Button(onClick = onRestartClick) {
-                    Text("Back to Menu")
+                Box(
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(30.dp)
+                        .clickable { onRestartClick() }
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.button),
+                        contentDescription = "Back to Menu",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.FillBounds
+                    )
+
+                    Text(
+                        text = "Back to Menu",
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color.Black,
+                        fontSize = 12.sp
+                    )
                 }
             }
         } else {
