@@ -107,12 +107,6 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
      */
     fun fetchOnlineLeaderboard() {
         viewModelScope.launch {
-            for (i in 3 downTo 1) {
-                _gameState.value = GameState.Countdown(i)
-                delay(1000)
-            }
-
-            _gameState.value = GameState.Running
             _onlineLeaderboard.value = scoreRepository.getOnlineLeaderboard()
         }
     }
