@@ -1,7 +1,6 @@
 package com.example.team16_mobile_team_project_1.game
 
 import android.graphics.BitmapFactory
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,11 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,7 +38,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.team16_mobile_team_project_1.R
 import com.example.team16_mobile_team_project_1.network.OnlineScore
 import kotlinx.coroutines.delay
@@ -61,7 +55,6 @@ fun GameScreen(
     val cannonballs by gameManager.cannonballs.collectAsState()
     val coin by gameManager.coin.collectAsState()
     val score = gameManager.score
-    val highScore by gameManager.highScore.collectAsState(initial = 0)
     val onlineLeaderboard by gameManager.onlineLeaderboard.collectAsState()
 
     val context = LocalContext.current
@@ -214,8 +207,8 @@ fun GameScreen(
                         gameManager.quitToMenu()
                         AudioManager.playSound(AudioManager.Sound.SELECT)
                     },
-                    onSubmitScore = {
-                        playerName -> gameManager.submitScore(playerName)
+                    onSubmitScore = { playerName ->
+                        gameManager.submitScore(playerName)
                         gameManager.fetchOnlineLeaderboard()
                         gameManager.fetchOnlineLeaderboard()
                     },
@@ -418,24 +411,28 @@ fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun GameOverMenu(onlineLeaderboard: List<OnlineScore>
-                 ,score: Long
-                 , highScore: Long
-                 , isNewHighScore: Boolean
-                 , onRestartClick: () -> Unit
-                 , onSubmitScore: (String) -> Unit
-                 , modifier: Modifier = Modifier) {
+fun GameOverMenu(
+    onlineLeaderboard: List<OnlineScore>,
+    score: Long,
+    highScore: Long,
+    isNewHighScore: Boolean,
+    onRestartClick: () -> Unit,
+    onSubmitScore: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
 
     var playerName by remember { mutableStateOf("Player") }
 //    val isNewHighScore = score > highScore
 
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally,
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier,) {
+        modifier = modifier,
+    ) {
 
         Text("Game Over", fontSize = 48.sp, color = Color.Red, fontWeight = FontWeight.Bold)
-        if (onlineLeaderboard.isEmpty()){
+        if (onlineLeaderboard.isEmpty()) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(top = 16.dp)
@@ -453,8 +450,7 @@ fun GameOverMenu(onlineLeaderboard: List<OnlineScore>
                     fontWeight = FontWeight.Bold
                 )
             }
-        } else
-        {
+        } else {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -489,12 +485,12 @@ fun GameOverMenu(onlineLeaderboard: List<OnlineScore>
         Text("Your Current Score: $score", fontSize = 28.sp, color = Color.White)
 
         // leaderboard submission UI
-        if(isNewHighScore){
+        if (isNewHighScore) {
             Text("New High Score!", fontSize = 24.sp, color = Color.Yellow)
 
             OutlinedTextField(
                 value = playerName,
-                onValueChange = { playerName = it},
+                onValueChange = { playerName = it },
                 label = { Text("Enter your name") },
                 singleLine = true
             )

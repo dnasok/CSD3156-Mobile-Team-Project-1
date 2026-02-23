@@ -2,8 +2,6 @@ package com.example.team16_mobile_team_project_1.game
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.team16_mobile_team_project_1.database.ScoreRepository
@@ -14,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -33,7 +30,7 @@ sealed interface GameState {
     data class GameOver(val score: Long, val isNewHighScore: Boolean) : GameState
 }
 
-class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
+class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
 
     private val _gameState = MutableStateFlow<GameState>(GameState.Ready)
     val gameState = _gameState.asStateFlow()

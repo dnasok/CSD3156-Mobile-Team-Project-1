@@ -1,6 +1,5 @@
 package com.example.team16_mobile_team_project_1
 
-import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -9,7 +8,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -24,7 +22,7 @@ import com.example.team16_mobile_team_project_1.network.RetrofitInstance
 import com.example.team16_mobile_team_project_1.ui.theme.Team16_Mobile_Team_Project_1Theme
 
 class MainActivity : ComponentActivity(), SensorEventListener {
-//    private val gameManager by viewModels<GameManager>()
+    //    private val gameManager by viewModels<GameManager>()
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var gameManager: GameManager? = null
@@ -37,7 +35,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         val scoreRepository = ScoreRepository(database.highScoreDao(), RetrofitInstance.api)
         val gameManagerFactory = GameManagerFactory(scoreRepository)
 
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         setContent {
@@ -73,7 +71,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        gameManager?.let {manager ->
+        gameManager?.let { manager ->
             if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
                 val accelX = event.values[0]
                 val accelY = event.values[1]
