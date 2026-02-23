@@ -12,9 +12,23 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 // Data classes to hold the state of game objects
-data class PlayerState(val x: Float, val y: Float, val radius: Float = 25f)
-data class CannonState(val id: Int, val x: Float, val y: Float, val angle: Float)
-data class CannonballState(val id: Int, val x: Float, val y: Float, val velocityX: Float, val velocityY: Float, val radius: Float = 10f)
+data class CannonState(
+    val id: Int,
+    val x: Float,
+    val y: Float,
+    val angle: Float,
+    var nextFireTime: Long = 0L
+)
+
+data class CannonballState(
+    val id: Int,
+    val cannonId: Int,
+    val x: Float,
+    val y: Float,
+    val velocityX: Float,
+    val velocityY: Float,
+    val radius: Float = 10f
+)
 
 // Sealed interface to represent the different states of the game
 sealed interface GameState {
@@ -30,8 +44,8 @@ class GameManager : ViewModel() {
     private val _gameState = MutableStateFlow<GameState>(GameState.Ready)
     val gameState = _gameState.asStateFlow()
 
-    private val _playerState = MutableStateFlow(PlayerState(0f, 0f))
-    val playerState = _playerState.asStateFlow()
+    private val _player = MutableStateFlow(Player(0f, 0f))
+    val player = _player.asStateFlow()
 
     private val _cannons = MutableStateFlow<List<CannonState>>(emptyList())
     val cannons = _cannons.asStateFlow()
@@ -42,17 +56,33 @@ class GameManager : ViewModel() {
     val score = mutableStateOf(0L)
     private var gameTime = 0L
 
+    private var accelX = 0f
+    private var accelY = 0f
+
+    private var nextCannonId = 0
+    private var nextCannonSpawnTime = 0L
+
     // Screen dimensions, to be set from the UI
     var screenWidth = 0f
+        set(value) {
+            field = value
+            Player.screenWidth = value.toInt()
+        }
     var screenHeight = 0f
+        set(value) {
+            field = value
+            Player.screenHeight = value.toInt()
+        }
 
     fun startGame() {
         if (_gameState.value !is GameState.Running) {
-            _playerState.value = PlayerState(x = screenWidth / 2, y = screenHeight / 2)
-            _cannonballs.value = emptyList()
-            spawnCannons()
             gameTime = 0
             score.value = 0
+            _player.value = Player(x = screenWidth / 2, y = screenHeight / 2)
+            _cannonballs.value = emptyList()
+            nextCannonId = 0
+            spawnInitialCannons()
+            nextCannonSpawnTime = 5000L // First new cannon after 5 seconds
             _gameState.value = GameState.Running
             viewModelScope.launch {
                 gameLoop()
@@ -91,78 +121,163 @@ class GameManager : ViewModel() {
             delay(16) // Aim for ~60 FPS
             gameTime += 16
             score.value = gameTime / 100 // Score increases over time
-            
+
+            _player.value.updatePosition(accelX, accelY)
             updateCannonballs()
             fireCannons()
+            spawnMoreCannons()
             checkCollisions()
             checkKillZone()
         }
     }
 
-    fun updatePlayerPosition(dx: Float, dy: Float) {
-        if (_gameState.value == GameState.Running) {
-            val newX = (_playerState.value.x + dx).coerceIn(0f, screenWidth)
-            val newY = (_playerState.value.y + dy).coerceIn(0f, screenHeight)
-            _playerState.value = _playerState.value.copy(x = newX, y = newY)
-        }
+    fun onSensorChanged(newAccelX: Float, newAccelY: Float) {
+        accelX = newAccelX
+        accelY = newAccelY
     }
 
-    private fun spawnCannons() {
-        _cannons.value = listOf(
-            CannonState(id = 1, x = 50f, y = screenHeight / 2, angle = 0f), // Left
-            CannonState(id = 2, x = screenWidth - 50f, y = screenHeight / 2, angle = 180f), // Right
-            CannonState(id = 3, x = screenWidth / 2, y = 50f, angle = 90f), // Top
-            CannonState(id = 4, x = screenWidth / 2, y = screenHeight - 50f, angle = -90f)  // Bottom
+    private fun spawnInitialCannons() {
+        val initialCannons = 7
+        val cannons = mutableListOf<CannonState>()
+        for (i in 0 until initialCannons) {
+            cannons.add(spawnSingleCannon())
+        }
+        _cannons.value = cannons
+    }
+
+    private fun spawnSingleCannon(): CannonState {
+        val centerX = screenWidth / 2f
+        val centerY = screenHeight / 2f
+        val cannonRadius = 25f // Half of the cannon image size (50)
+
+        val side = Random.nextInt(4)
+        val x: Float
+        val y: Float
+
+        when (side) {
+            0 -> { // Top wall
+                x = Random.nextFloat() * (screenWidth - cannonRadius * 2) + cannonRadius
+                y = cannonRadius
+            }
+
+            1 -> { // Right wall
+                x = screenWidth - cannonRadius
+                y = Random.nextFloat() * (screenHeight - cannonRadius * 2) + cannonRadius
+            }
+
+            2 -> { // Bottom wall
+                x = Random.nextFloat() * (screenWidth - cannonRadius * 2) + cannonRadius
+                y = screenHeight - cannonRadius
+            }
+
+            else -> { // Left wall
+                x = cannonRadius
+                y = Random.nextFloat() * (screenHeight - cannonRadius * 2) + cannonRadius
+            }
+        }
+
+        val angleToCenter =
+            Math.toDegrees(kotlin.math.atan2(centerY - y, centerX - x).toDouble()).toFloat()
+
+        return CannonState(
+            id = nextCannonId++,
+            x = x,
+            y = y,
+            angle = angleToCenter,
+            nextFireTime = gameTime + Random.nextLong(1000, 3000)
         )
     }
 
     private fun fireCannons() {
-        // Fire every 2 seconds
-        if (gameTime % 2000 < 16) {
-            val newCannonballs = _cannonballs.value.toMutableList()
-            _cannons.value.forEach { cannon ->
+        val newCannonballs = _cannonballs.value.toMutableList()
+
+        _cannons.value.forEach { cannon ->
+            if (gameTime >= cannon.nextFireTime) {
                 val angleRad = Math.toRadians(cannon.angle.toDouble()).toFloat()
-                val speed = 3f // pixels per frame
+                val speed = 7f + (gameTime / 15000f) // Increase speed over time
+
                 newCannonballs.add(
                     CannonballState(
                         id = Random.nextInt(),
+                        cannonId = cannon.id,
                         x = cannon.x,
                         y = cannon.y,
                         velocityX = cos(angleRad) * speed,
                         velocityY = sin(angleRad) * speed
                     )
                 )
+
+                cannon.nextFireTime = Long.MAX_VALUE // Prevent this cannon from firing again
+                AudioManager.playSound(AudioManager.Sound.SHOOT)
             }
-            _cannonballs.value = newCannonballs
+        }
+        _cannonballs.value = newCannonballs
+    }
+
+    private fun spawnMoreCannons() {
+        if (gameTime >= nextCannonSpawnTime) {
+            val newCannons = _cannons.value.toMutableList()
+            newCannons.add(spawnSingleCannon())
+            _cannons.value = newCannons
+
+            val spawnDelay = (5000 - (gameTime / 10)).coerceAtLeast(1000L)
+            nextCannonSpawnTime = gameTime + spawnDelay
         }
     }
 
     private fun updateCannonballs() {
-        _cannonballs.value = _cannonballs.value
+        val newCannonballs = _cannonballs.value
             .map { it.copy(x = it.x + it.velocityX, y = it.y + it.velocityY) }
-            .filter { it.x > 0 && it.x < screenWidth && it.y > 0 && it.y < screenHeight }
+            .filter { cb ->
+                val despawned = cb.x < 0 || cb.x > screenWidth || cb.y < 0 || cb.y > screenHeight
+                if (despawned) {
+                    // When a cannonball is despawned, remove the cannon that fired it and spawn a new one
+                    val newCannons = _cannons.value.toMutableList()
+                    newCannons.removeAll { it.id == cb.cannonId }
+                    newCannons.add(spawnSingleCannon())
+                    _cannons.value = newCannons
+                }
+                !despawned
+            }
+        _cannonballs.value = newCannonballs
     }
 
-
     private fun checkCollisions() {
-        val player = _playerState.value
-        _cannonballs.value.forEach { cannonball ->
+        val player = _player.value
+        val newCannonballs = _cannonballs.value.toMutableList()
+        var collisionOccurred = false
+
+        val iterator = newCannonballs.iterator()
+        while (iterator.hasNext()) {
+            val cannonball = iterator.next()
             val dx = player.x - cannonball.x
             val dy = player.y - cannonball.y
             val distance = kotlin.math.sqrt(dx * dx + dy * dy)
             if (distance < player.radius + cannonball.radius) {
+                iterator.remove()
+                val newCannons = _cannons.value.toMutableList()
+                newCannons.removeAll { it.id == cannonball.cannonId }
+                newCannons.add(spawnSingleCannon())
+                _cannons.value = newCannons
+                AudioManager.playSound(AudioManager.Sound.HIT)
                 endGame()
-                return@forEach
+                collisionOccurred = true
+                break
             }
+        }
+
+        if (collisionOccurred) {
+            _cannonballs.value = newCannonballs
         }
     }
 
     private fun checkKillZone() {
-        val player = _playerState.value
-        val killZone = 20f // 20 pixels from the edge
+        val player = _player.value
+        val killZone = 10f // 10 pixels from the edge
         if (player.x < killZone || player.x > screenWidth - killZone ||
             player.y < killZone || player.y > screenHeight - killZone
         ) {
+            AudioManager.playSound(AudioManager.Sound.HIT)
             endGame()
         }
     }

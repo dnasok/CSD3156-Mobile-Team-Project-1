@@ -1,19 +1,39 @@
 package com.example.team16_mobile_team_project_1.game
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import com.example.team16_mobile_team_project_1.game.Player.Companion.screenHeight
+import com.example.team16_mobile_team_project_1.game.Player.Companion.screenWidth
 
-@Composable
-fun Player(x: Float, y: Float) {
-    Canvas(modifier = Modifier
-        .size(50.dp)
-        .offset(x.dp, y.dp)) {
-        drawCircle(color = Color.Blue, radius = 50f, center = Offset(size.width / 2, size.height / 2))
+data class Player(
+    var x: Float,
+    var y: Float,
+    val radius: Float = 25f,
+    private var velX: Float = 0f,
+    private var velY: Float = 0f
+) {
+    fun updatePosition(accelX: Float, accelY: Float) {
+        // Using accelerometer for a tilt-based "balancing" movement.
+        // The phone's tilt affects the player's velocity.
+        val sensitivity = 0.5f
+
+        // The accelerometer values are used to simulate tilt.
+        velX += -accelX * sensitivity
+        velY += accelY * sensitivity
+
+        // Apply friction so the player eventually stops.
+        velX *= 0.92f
+        velY *= 0.92f
+
+        // Update position based on velocity
+        x += velX
+        y += velY
+
+        // Clamp the player's position to stay within the screen bounds.
+        x = x.coerceIn(0f, screenWidth.toFloat())
+        y = y.coerceIn(0f, screenHeight.toFloat())
+    }
+
+    companion object {
+        var screenWidth: Int = 0
+        var screenHeight: Int = 0
     }
 }

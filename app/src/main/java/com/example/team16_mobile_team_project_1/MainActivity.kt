@@ -21,14 +21,14 @@ import com.example.team16_mobile_team_project_1.ui.theme.Team16_Mobile_Team_Proj
 class MainActivity : ComponentActivity(), SensorEventListener {
     private val gameManager by viewModels<GameManager>()
     private lateinit var sensorManager: SensorManager
-    private var gyroscope: Sensor? = null
+    private var accelerometer: Sensor? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         setContent {
             Team16_Mobile_Team_Project_1Theme {
@@ -44,8 +44,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onResume() {
         super.onResume()
-        gyroscope?.also { gyro ->
-            sensorManager.registerListener(this, gyro, SensorManager.SENSOR_DELAY_GAME)
+        accelerometer?.also { accel ->
+            sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)
         }
     }
 
@@ -59,14 +59,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-            val axisX = event.values[0]
-            val axisY = event.values[1]
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            val accelX = event.values[0]
+            val accelY = event.values[1]
 
-            // Update player position via GameManager
-            // Multiplying by a factor to make movement more noticeable
             if (gameManager.gameState.value is com.example.team16_mobile_team_project_1.game.GameState.Running) {
-                gameManager.updatePlayerPosition(dx = axisY * 5, dy = -axisX * 5)
+                gameManager.onSensorChanged(newAccelX = accelX, newAccelY = accelY)
             }
         }
     }
