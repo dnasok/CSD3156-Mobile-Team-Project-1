@@ -17,6 +17,7 @@ data class CannonState(
     val x: Float,
     val y: Float,
     val angle: Float,
+    val radius: Float = 37.5f,
     var nextFireTime: Long = 0L
 )
 
@@ -27,7 +28,7 @@ data class CannonballState(
     val y: Float,
     val velocityX: Float,
     val velocityY: Float,
-    val radius: Float = 10f
+    val radius: Float = 15f
 )
 
 // Sealed interface to represent the different states of the game
@@ -159,7 +160,7 @@ class GameManager : ViewModel() {
     private fun spawnSingleCannon(): CannonState {
         val centerX = screenWidth / 2f
         val centerY = screenHeight / 2f
-        val cannonRadius = 25f // Half of the cannon image size (50)
+        val cannonRadius = 37.5f
 
         val side = Random.nextInt(4)
         val x: Float
@@ -195,6 +196,7 @@ class GameManager : ViewModel() {
             x = x,
             y = y,
             angle = angleToCenter,
+            radius = cannonRadius,
             nextFireTime = gameTime + Random.nextLong(1000, 3000)
         )
     }
@@ -283,7 +285,7 @@ class GameManager : ViewModel() {
     }
 
     private fun spawnCoin() {
-        val padding = 50f
+        val padding = 75f
         val x = Random.nextFloat() * (screenWidth - padding * 2) + padding
         val y = Random.nextFloat() * (screenHeight - padding * 2) + padding
         _coin.value = Coin(x, y)
@@ -306,7 +308,7 @@ class GameManager : ViewModel() {
 
     private fun checkKillZone() {
         val player = _player.value
-        val killZone = 10f // 10 pixels from the edge
+        val killZone = 10f
         if (player.x < killZone || player.x > screenWidth - killZone ||
             player.y < killZone || player.y > screenHeight - killZone
         ) {

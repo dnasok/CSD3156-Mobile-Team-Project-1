@@ -138,7 +138,16 @@ fun GameScreen(
                         .background(Color.Black.copy(alpha = 0.15f))
                 )
 
-                GameCanvas(player, cannons, cannonballs, coin, playerImage, enemyImage, cannonballImage, coinImage)
+                GameCanvas(
+                    player,
+                    cannons,
+                    cannonballs,
+                    coin,
+                    playerImage,
+                    enemyImage,
+                    cannonballImage,
+                    coinImage
+                )
                 Text(
                     "Score: $score",
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -195,7 +204,16 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene
-                GameCanvas(player, cannons, cannonballs, coin, playerImage, enemyImage, cannonballImage, coinImage)
+                GameCanvas(
+                    player,
+                    cannons,
+                    cannonballs,
+                    coin,
+                    playerImage,
+                    enemyImage,
+                    cannonballImage,
+                    coinImage
+                )
                 Text(
                     "Score: $score",
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -236,7 +254,16 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene behind
-                GameCanvas(player, cannons, cannonballs, coin, playerImage, enemyImage, cannonballImage, coinImage)
+                GameCanvas(
+                    player,
+                    cannons,
+                    cannonballs,
+                    coin,
+                    playerImage,
+                    enemyImage,
+                    cannonballImage,
+                    coinImage
+                )
                 Text(
                     "Score: $score",
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -290,10 +317,14 @@ fun GameCanvas(
             drawImage(
                 image = enemyImage,
                 dstOffset = IntOffset(
-                    (cannon.x - 25).toInt(),
-                    (cannon.y - 25).toInt()
+                    (cannon.x - cannon.radius).toInt(),
+                    (cannon.y - cannon.radius).toInt()
                 ),
-                dstSize = IntSize(50, 50)
+                dstSize = IntSize(
+                    (
+                            cannon.radius * 2).toInt(),
+                    (cannon.radius * 2).toInt()
+                )
             )
         }
 
