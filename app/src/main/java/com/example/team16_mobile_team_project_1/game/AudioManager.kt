@@ -14,7 +14,7 @@ object AudioManager {
     private val soundMap = mutableMapOf<Sound, Int>()
 
     enum class Sound {
-        HIT, SELECT, SHOOT
+        HIT, SELECT, SHOOT, COIN
     }
 
     fun initialize(context: Context) {
@@ -33,6 +33,7 @@ object AudioManager {
         soundMap[Sound.HIT] = soundPool?.load(context, R.raw.sfx_hit, 1) ?: 0
         soundMap[Sound.SELECT] = soundPool?.load(context, R.raw.sfx_select, 1) ?: 0
         soundMap[Sound.SHOOT] = soundPool?.load(context, R.raw.sfx_shoot, 1) ?: 0
+        soundMap[Sound.COIN] = soundPool?.load(context, R.raw.sfx_coin, 1) ?: 0
 
         isInitialized = true
     }

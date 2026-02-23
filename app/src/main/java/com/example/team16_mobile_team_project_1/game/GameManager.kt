@@ -53,8 +53,12 @@ class GameManager : ViewModel() {
     private val _cannonballs = MutableStateFlow<List<CannonballState>>(emptyList())
     val cannonballs = _cannonballs.asStateFlow()
 
+    private val _coin = MutableStateFlow<Coin?>(null)
+    val coin = _coin.asStateFlow()
+
     val score = mutableStateOf(0L)
     private var gameTime = 0L
+    private var lastScoreUpdateTime = 0L
 
     private var accelX = 0f
     private var accelY = 0f
@@ -78,10 +82,12 @@ class GameManager : ViewModel() {
         if (_gameState.value !is GameState.Running) {
             gameTime = 0
             score.value = 0
+            lastScoreUpdateTime = 0L
             _player.value = Player(x = screenWidth / 2, y = screenHeight / 2)
             _cannonballs.value = emptyList()
             nextCannonId = 0
             spawnInitialCannons()
+            spawnCoin()
             nextCannonSpawnTime = 5000L // First new cannon after 5 seconds
             _gameState.value = GameState.Running
             viewModelScope.launch {
@@ -120,13 +126,18 @@ class GameManager : ViewModel() {
         while (_gameState.value == GameState.Running) {
             delay(16) // Aim for ~60 FPS
             gameTime += 16
-            score.value = gameTime / 100 // Score increases over time
+            // Score increases over time
+            if (gameTime - lastScoreUpdateTime >= 100) {
+                score.value += 1
+                lastScoreUpdateTime = gameTime
+            }
 
             _player.value.updatePosition(accelX, accelY)
             updateCannonballs()
             fireCannons()
             spawnMoreCannons()
             checkCollisions()
+            checkCoinCollision()
             checkKillZone()
         }
     }
@@ -268,6 +279,28 @@ class GameManager : ViewModel() {
 
         if (collisionOccurred) {
             _cannonballs.value = newCannonballs
+        }
+    }
+
+    private fun spawnCoin() {
+        val padding = 50f
+        val x = Random.nextFloat() * (screenWidth - padding * 2) + padding
+        val y = Random.nextFloat() * (screenHeight - padding * 2) + padding
+        _coin.value = Coin(x, y)
+    }
+
+    private fun checkCoinCollision() {
+        _coin.value?.let { coin ->
+            val player = _player.value
+            val dx = player.x - coin.x
+            val dy = player.y - coin.y
+            val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+            if (distance < player.radius + coin.radius) {
+                score.value += 50
+                _coin.value = null
+                AudioManager.playSound(AudioManager.Sound.COIN)
+                spawnCoin()
+            }
         }
     }
 

@@ -49,6 +49,7 @@ fun GameScreen(
     val player by gameManager.player.collectAsState()
     val cannons by gameManager.cannons.collectAsState()
     val cannonballs by gameManager.cannonballs.collectAsState()
+    val coin by gameManager.coin.collectAsState()
     val score by gameManager.score
 
     val context = LocalContext.current
@@ -81,6 +82,9 @@ fun GameScreen(
     }
     val cannonballImage = remember {
         BitmapFactory.decodeResource(context.resources, R.drawable.cannonball).asImageBitmap()
+    }
+    val coinImage = remember {
+        BitmapFactory.decodeResource(context.resources, R.drawable.coin).asImageBitmap()
     }
 
     Box(
@@ -134,7 +138,7 @@ fun GameScreen(
                         .background(Color.Black.copy(alpha = 0.15f))
                 )
 
-                GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
+                GameCanvas(player, cannons, cannonballs, coin, playerImage, enemyImage, cannonballImage, coinImage)
                 Text(
                     "Score: $score",
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -191,7 +195,7 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene
-                GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
+                GameCanvas(player, cannons, cannonballs, coin, playerImage, enemyImage, cannonballImage, coinImage)
                 Text(
                     "Score: $score",
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -232,7 +236,7 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene behind
-                GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
+                GameCanvas(player, cannons, cannonballs, coin, playerImage, enemyImage, cannonballImage, coinImage)
                 Text(
                     "Score: $score",
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -255,9 +259,11 @@ fun GameCanvas(
     player: Player,
     cannons: List<CannonState>,
     cannonballs: List<CannonballState>,
+    coin: Coin?,
     playerImage: ImageBitmap,
     enemyImage: ImageBitmap,
-    cannonballImage: ImageBitmap
+    cannonballImage: ImageBitmap,
+    coinImage: ImageBitmap
 ) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         // Draw Kill Zone border
@@ -302,6 +308,21 @@ fun GameCanvas(
                 dstSize = IntSize(
                     (cannonball.radius * 2).toInt(),
                     (cannonball.radius * 2).toInt()
+                )
+            )
+        }
+
+        // Draw Coin
+        coin?.let {
+            drawImage(
+                image = coinImage,
+                dstOffset = IntOffset(
+                    (it.x - it.radius).toInt(),
+                    (it.y - it.radius).toInt()
+                ),
+                dstSize = IntSize(
+                    (it.radius * 2).toInt(),
+                    (it.radius * 2).toInt()
                 )
             )
         }
