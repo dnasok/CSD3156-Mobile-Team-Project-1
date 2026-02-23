@@ -307,8 +307,8 @@ fun GameScreen(
 @Composable
 fun GameCanvas(
     player: Player,
-    cannons: List<CannonState>,
-    cannonballs: List<CannonballState>,
+    cannons: List<Cannon>,
+    cannonballs: List<Cannonball>,
     coin: Coin?,
     playerImage: ImageBitmap,
     enemyImage: ImageBitmap,
