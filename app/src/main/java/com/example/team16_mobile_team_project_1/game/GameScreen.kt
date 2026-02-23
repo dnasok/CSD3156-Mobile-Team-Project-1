@@ -62,6 +62,7 @@ fun GameScreen(
     val cannonballs by gameManager.cannonballs.collectAsState()
     val coin by gameManager.coin.collectAsState()
     val score = gameManager.score
+    val highScore by gameManager.highScore.collectAsState(initial = 0)
     val onlineLeaderboard by gameManager.onlineLeaderboard.collectAsState()
 
     val context = LocalContext.current
@@ -208,11 +209,16 @@ fun GameScreen(
                     onlineLeaderboard = onlineLeaderboard,
                     score = state.score,
                     highScore = highScore,
+                    isNewHighScore = state.isNewHighScore,
                     onRestartClick = {
-                        gameManager.startGame()
+                        gameManager.quitToMenu()
                         AudioManager.playSound(AudioManager.Sound.SELECT)
                     },
-                    onSubmitScore = { playerName -> gameManager.submitScore(playerName) },
+                    onSubmitScore = {
+                        playerName -> gameManager.submitScore(playerName)
+                        gameManager.fetchOnlineLeaderboard()
+                        gameManager.fetchOnlineLeaderboard()
+                    },
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -415,45 +421,68 @@ fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
 fun GameOverMenu(onlineLeaderboard: List<OnlineScore>
                  ,score: Long
                  , highScore: Long
+                 , isNewHighScore: Boolean
                  , onRestartClick: () -> Unit
                  , onSubmitScore: (String) -> Unit
                  , modifier: Modifier = Modifier) {
 
     var playerName by remember { mutableStateOf("Player") }
-    val isNewHighScore = score > highScore
-    Log.d("GameScreen", "Game Over Menu: Score: $score, High Score: $highScore, New High Score: $isNewHighScore")
+//    val isNewHighScore = score > highScore
+
 
     Column(horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = modifier,) {
+
         Text("Game Over", fontSize = 48.sp, color = Color.Red, fontWeight = FontWeight.Bold)
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                "Top 5 Players",
-                fontSize = 22.sp,
-                color = Color.Yellow,
-                fontWeight = FontWeight.Bold
-            )
-            onlineLeaderboard.forEachIndexed { index, score ->
-                Row(
-                    modifier = Modifier.width(200.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+        if (onlineLeaderboard.isEmpty()){
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text(
+                    "Local High Score",
+                    fontSize = 22.sp,
+                    color = Color.Yellow,
+                    fontWeight = FontWeight.Bold
                 )
-                {
-                    Text(
-                        text = "${index + 1}. ${score.playerName}",
-                        color = Color.White,
-                        fontSize = 18.sp
+                Text(
+                    text = highScore.toString(),
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else
+        {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    "Top 5 Players",
+                    fontSize = 22.sp,
+                    color = Color.Yellow,
+                    fontWeight = FontWeight.Bold
+                )
+                onlineLeaderboard.forEachIndexed { index, score ->
+                    Row(
+                        modifier = Modifier.width(200.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     )
-                    Text(
-                        text = score.score.toString(),
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    {
+                        Text(
+                            text = "${index + 1}. ${score.playerName}",
+                            color = Color.White,
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            text = score.score.toString(),
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -475,7 +504,7 @@ fun GameOverMenu(onlineLeaderboard: List<OnlineScore>
                     Text("Submit Score")
                 }
                 Button(onClick = onRestartClick) {
-                    Text("Cancel")
+                    Text("Back to Menu")
                 }
             }
         } else {

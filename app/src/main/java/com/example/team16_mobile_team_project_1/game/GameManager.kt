@@ -29,7 +29,7 @@ sealed interface GameState {
     object Running : GameState
     object Paused : GameState // in game pause
     data class Countdown(val number: Int) : GameState // count down for resume
-    data class GameOver(val score: Long) : GameState
+    data class GameOver(val score: Long, val isNewHighScore: Boolean) : GameState
 }
 
 class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
@@ -343,12 +343,13 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
         if (_gameState.value == GameState.Running) {
 //            _gameState.value = GameState.GameOver(score.value)
             finalScore = _score.longValue
-
-            _gameState.value = GameState.GameOver(finalScore)
-
+            fetchOnlineLeaderboard()
             viewModelScope.launch {
                 val currentHighScore = highScore.firstOrNull() ?: 0L
-                if (finalScore > currentHighScore) {
+                val isNewHighScore = finalScore > currentHighScore
+
+                _gameState.value = GameState.GameOver(finalScore, isNewHighScore)
+                if (isNewHighScore) {
                     scoreRepository.saveLocalHighScore(finalScore.toInt())
                 }
             }
@@ -358,7 +359,7 @@ class GameManager(private val scoreRepository: ScoreRepository): ViewModel() {
     fun submitScore(playerName: String) {
         viewModelScope.launch {
             scoreRepository.submitOnlineScore(playerName, finalScore.toInt())
-            quitToMenu()
+//            quitToMenu()
         }
     }
 }
