@@ -1,34 +1,43 @@
 package com.example.team16_mobile_team_project_1.game
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.background
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.unit.dp
+import com.example.team16_mobile_team_project_1.R
 import kotlinx.coroutines.delay
 import kotlin.random.Random
-import com.example.team16_mobile_team_project_1.R
 
 @Composable
 fun GameScreen(
@@ -40,6 +49,17 @@ fun GameScreen(
     val cannons by gameManager.cannons.collectAsState()
     val cannonballs by gameManager.cannonballs.collectAsState()
     val score by gameManager.score
+
+    val context = LocalContext.current
+    val playerImage = remember {
+        BitmapFactory.decodeResource(context.resources, R.drawable.player).asImageBitmap()
+    }
+    val enemyImage = remember {
+        BitmapFactory.decodeResource(context.resources, R.drawable.enemy).asImageBitmap()
+    }
+    val cannonballImage = remember {
+        BitmapFactory.decodeResource(context.resources, R.drawable.cannonball).asImageBitmap()
+    }
 
     Box(
         modifier = modifier
@@ -88,7 +108,7 @@ fun GameScreen(
                         .background(Color.Black.copy(alpha = 0.15f))
                 )
 
-                GameCanvas(player, cannons, cannonballs)
+                GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
                 // Pause button
@@ -101,7 +121,7 @@ fun GameScreen(
                         .clickable { gameManager.pauseGame() }
                 ) {
                     Text(
-                        text = "\u23F8", // pause icon
+                        text = "⏸", // pause icon
                         modifier = Modifier.align(Alignment.Center),
                         fontSize = 30.sp
                     )
@@ -132,7 +152,7 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene
-                GameCanvas(player, cannons, cannonballs)
+                GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
                 PauseMenu(
@@ -159,7 +179,7 @@ fun GameScreen(
                 )
 
                 // Draw frozen game scene behind
-                GameCanvas(player, cannons, cannonballs)
+                GameCanvas(player, cannons, cannonballs, playerImage, enemyImage, cannonballImage)
                 Text("Score: $score", modifier = Modifier.align(Alignment.TopCenter), fontSize = 24.sp)
 
                 // Big countdown number in the middle
@@ -174,22 +194,56 @@ fun GameScreen(
 }
 
 @Composable
-fun GameCanvas(player: Player, cannons: List<CannonState>, cannonballs: List<CannonballState>) {
+fun GameCanvas(
+    player: Player,
+    cannons: List<CannonState>,
+    cannonballs: List<CannonballState>,
+    playerImage: ImageBitmap,
+    enemyImage: ImageBitmap,
+    cannonballImage: ImageBitmap
+) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         // Draw Kill Zone border
         drawRect(color = Color.Red, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 20f))
 
         // Draw Player
-        drawCircle(color = Color.Blue, radius = player.radius, center = Offset(player.x, player.y))
+        drawImage(
+            image = playerImage,
+            dstOffset = IntOffset(
+                (player.x - player.radius).toInt(),
+                (player.y - player.radius).toInt()
+            ),
+            dstSize = IntSize(
+                (player.radius * 2).toInt(),
+                (player.radius * 2).toInt()
+            )
+        )
 
         // Draw Cannons
         cannons.forEach { cannon ->
-            drawRect(color = Color.Black, topLeft = Offset(cannon.x - 25, cannon.y - 25), size = androidx.compose.ui.geometry.Size(50f, 50f))
+            drawImage(
+                image = enemyImage,
+                dstOffset = IntOffset(
+                    (cannon.x - 25).toInt(),
+                    (cannon.y - 25).toInt()
+                ),
+                dstSize = IntSize(50, 50)
+            )
         }
 
         // Draw Cannonballs
         cannonballs.forEach { cannonball ->
-            drawCircle(color = Color.DarkGray, radius = cannonball.radius, center = Offset(cannonball.x, cannonball.y))
+            drawImage(
+                image = cannonballImage,
+                dstOffset = IntOffset(
+                    (cannonball.x - cannonball.radius).toInt(),
+                    (cannonball.y - cannonball.radius).toInt()
+                ),
+                dstSize = IntSize(
+                    (cannonball.radius * 2).toInt(),
+                    (cannonball.radius * 2).toInt()
+                )
+            )
         }
     }
 }
