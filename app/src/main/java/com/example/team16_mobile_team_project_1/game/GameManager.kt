@@ -258,7 +258,7 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
             y = y,
             angle = angleToCenter,
             radius = cannonRadius,
-            nextFireTime = gameTime + Random.nextLong(1000, 3000)
+            nextFireTime = gameTime + Random.nextLong(0, 1000)
         )
     }
 
