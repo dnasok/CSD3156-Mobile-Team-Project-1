@@ -120,13 +120,9 @@ class GameManager : ViewModel() {
             fireCannons()
             spawnMoreCannons()
 
-            if (_gameState.value == GameState.Running) {
-                checkCollisions()
-            }
-            if (_gameState.value == GameState.Running) {
+            val collisionOccurred = checkCollisions()
+            if (!collisionOccurred) {
                 checkCoinCollision()
-            }
-            if (_gameState.value == GameState.Running) {
                 checkKillZone()
             }
         }
@@ -244,7 +240,7 @@ class GameManager : ViewModel() {
         _cannonballs.value = newCannonballs
     }
 
-    private fun checkCollisions() {
+    private fun checkCollisions(): Boolean {
         val player = _player.value
         val newCannonballs = _cannonballs.value.toMutableList()
         var collisionOccurred = false
@@ -271,6 +267,7 @@ class GameManager : ViewModel() {
         if (collisionOccurred) {
             _cannonballs.value = newCannonballs
         }
+        return collisionOccurred
     }
 
     private fun spawnCoin() {
