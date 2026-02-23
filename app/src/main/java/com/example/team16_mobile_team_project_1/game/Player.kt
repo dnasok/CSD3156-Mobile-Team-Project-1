@@ -28,8 +28,8 @@ data class Player(
         y += velY
 
         // Clamp the player's position to stay within the screen bounds.
-        x = x.coerceIn(radius, screenWidth.toFloat() - radius)
-        y = y.coerceIn(radius, screenHeight.toFloat() - radius)
+        x = x.coerceIn(0f, screenWidth.toFloat())
+        y = y.coerceIn(0f, screenHeight.toFloat())
     }
 
     companion object {
