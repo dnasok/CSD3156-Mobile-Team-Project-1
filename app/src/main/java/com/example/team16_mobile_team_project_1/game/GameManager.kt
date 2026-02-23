@@ -1,6 +1,6 @@
 package com.example.team16_mobile_team_project_1.game
 
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
@@ -38,7 +38,7 @@ class GameManager : ViewModel() {
     private val _coin = MutableStateFlow<Coin?>(null)
     val coin = _coin.asStateFlow()
 
-    val score = mutableStateOf(0L)
+    val score = mutableLongStateOf(0L)
     private var gameTime = 0L
     private var lastScoreUpdateTime = 0L
 
@@ -63,7 +63,7 @@ class GameManager : ViewModel() {
     fun startGame() {
         if (_gameState.value !is GameState.Running) {
             gameTime = 0
-            score.value = 0
+            score.longValue = 0
             lastScoreUpdateTime = 0L
             _player.value = Player(x = screenWidth / 2, y = screenHeight / 2)
             _cannonballs.value = emptyList()
@@ -110,7 +110,7 @@ class GameManager : ViewModel() {
             gameTime += 16
             // Score increases over time
             if (gameTime - lastScoreUpdateTime >= 100) {
-                score.value += 1
+                score.longValue += 1
                 lastScoreUpdateTime = gameTime
             }
 
@@ -136,7 +136,7 @@ class GameManager : ViewModel() {
     private fun spawnInitialCannons() {
         val initialCannons = 7
         val cannons = mutableListOf<Cannon>()
-        for (i in 0 until initialCannons) {
+        repeat(initialCannons) {
             cannons.add(spawnSingleCannon())
         }
         _cannons.value = cannons
@@ -227,7 +227,7 @@ class GameManager : ViewModel() {
         val newCannonballs = _cannonballs.value
             .map { it.copy(x = it.x + it.velocityX, y = it.y + it.velocityY) }
             .filter { cb ->
-                val despawned = cb.x < 0 || cb.x > screenWidth || cb.y < 0 || cb.y > screenHeight
+                val despawned = cb.x !in 0f..screenWidth || cb.y !in 0f..screenHeight
                 if (despawned) {
                     // When a cannonball is despawned, remove the cannon that fired it and spawn a new one
                     val newCannons = _cannons.value.toMutableList()
@@ -284,7 +284,7 @@ class GameManager : ViewModel() {
             val dy = player.y - coin.y
             val distance = kotlin.math.sqrt(dx * dx + dy * dy)
             if (distance < player.radius + coin.radius) {
-                score.value += 50
+                score.longValue += 50
                 _coin.value = null
                 AudioManager.playSound(AudioManager.Sound.COIN)
                 spawnCoin()
@@ -294,9 +294,9 @@ class GameManager : ViewModel() {
 
     private fun checkKillZone() {
         val player = _player.value
-        val killZone = 10f
-        if (player.x < killZone || player.x > screenWidth - killZone ||
-            player.y < killZone || player.y > screenHeight - killZone
+        val killZone = player.radius
+        if (player.x !in killZone..(screenWidth - killZone) ||
+            player.y !in killZone..(screenHeight - killZone)
         ) {
             AudioManager.playSound(AudioManager.Sound.HIT)
             endGame()
@@ -305,7 +305,7 @@ class GameManager : ViewModel() {
 
     private fun endGame() {
         if (_gameState.value == GameState.Running) {
-            _gameState.value = GameState.GameOver(score.value)
+            _gameState.value = GameState.GameOver(score.longValue)
         }
     }
 }
