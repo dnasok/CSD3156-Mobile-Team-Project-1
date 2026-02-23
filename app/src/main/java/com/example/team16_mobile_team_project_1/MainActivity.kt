@@ -23,11 +23,24 @@ import com.example.team16_mobile_team_project_1.game.GameState
 import com.example.team16_mobile_team_project_1.network.RetrofitInstance
 import com.example.team16_mobile_team_project_1.ui.theme.Team16_Mobile_Team_Project_1Theme
 
+/**
+ * The main activity of the application, which hosts the game.
+ */
 class MainActivity : ComponentActivity(), SensorEventListener {
+    //    private val gameManager by viewModels<GameManager>()
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var gameManager: GameManager? = null
 
+    /**
+     * Called when the activity is first created. This is where you should do all of your normal
+     * static set up: create views, bind data to lists, etc. This method also provides you with a
+     * Bundle containing the activity's previously frozen state, if there was one.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut
+     * down then this Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
+     * Note: Otherwise it is null.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -55,6 +68,11 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
     }
 
+    /**
+     * Called after onRestoreInstanceState(Bundle), onRestart(), or onPause(), for your activity to start
+     * interacting with the user. This is a good place to begin animations, open exclusive-access
+     * devices (such as the camera), etc.
+     */
     override fun onResume() {
         super.onResume()
         accelerometer?.also { accel ->
@@ -65,6 +83,10 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
     }
 
+    /**
+     * Called as part of the activity lifecycle when an activity is going into the background, but has
+     * not (yet) been killed. The counterpart to onResume().
+     */
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(this)
@@ -72,10 +94,24 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         AudioManager.pauseMusicForLifecycle()
     }
 
+    /**
+     * Called when the accuracy of the registered sensor has changed. Unlike onSensorChanged(SensorEvent),
+     * this is only called when this value changes.
+     *
+     * @param sensor The Sensor that has a new accuracy value.
+     * @param accuracy The new accuracy of this sensor.
+     */
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Can be left empty for this implementation
     }
 
+    /**
+     * Called when there is a new sensor event. Note that "on changed" is somewhat of a misnomer, as
+     * this is called at a rate determined by the sensor update frequency; so we have to call this
+     * method even if the sensor values have not changed.
+     *
+     * @param event The SensorEvent.
+     */
     override fun onSensorChanged(event: SensorEvent?) {
         gameManager?.let { manager ->
             if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {

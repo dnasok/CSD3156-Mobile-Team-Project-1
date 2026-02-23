@@ -20,16 +20,30 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-
-// Sealed interface to represent the different states of the game
+/**
+ * Sealed interface representing the different states of the game.
+ */
 sealed interface GameState {
+    /** The game is ready to start, displaying the main menu. */
     object Ready : GameState
+
+    /** The game is actively running. */
     object Running : GameState
-    object Paused : GameState // in game pause
-    data class Countdown(val number: Int) : GameState // count down for resume
+
+    /** The game is paused. */
+    object Paused : GameState
+
+    /** A countdown is being displayed before resuming the game. */
+    data class Countdown(val number: Int) : GameState
+
+    /** The game is over, displaying the score and leaderboard. */
     data class GameOver(val score: Long, val isNewHighScore: Boolean) : GameState
 }
 
+/**
+ * Manages the game's state and logic. This includes the player, cannons, cannonballs,
+ * score, and game state transitions.
+ */
 class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
 
     private val _gameState = MutableStateFlow<GameState>(GameState.Ready)
@@ -88,12 +102,24 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
         fetchOnlineLeaderboard()
     }
 
+    /**
+     * Fetches the online leaderboard from the repository.
+     */
     fun fetchOnlineLeaderboard() {
         viewModelScope.launch {
+            for (i in 3 downTo 1) {
+                _gameState.value = GameState.Countdown(i)
+                delay(1000)
+            }
+
+            _gameState.value = GameState.Running
             _onlineLeaderboard.value = scoreRepository.getOnlineLeaderboard()
         }
     }
 
+    /**
+     * Starts a new game.
+     */
     fun startGame() {
         if (_gameState.value !is GameState.Running) {
             gameTime = 0
@@ -118,14 +144,18 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
         }
     }
 
-    // in game pause
+    /**
+     * Pauses the game if it is currently running.
+     */
     fun pauseGame() {
         if (_gameState.value == GameState.Running) {
             _gameState.value = GameState.Paused
         }
     }
 
-    // in game resume after pausing
+    /**
+     * Resumes the game after being paused, with a countdown.
+     */
     fun resumeGame() {
         if (_gameState.value != GameState.Paused) return
 
@@ -140,10 +170,16 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
         }
     }
 
+    /**
+     * Quits the current game and returns to the main menu.
+     */
     fun quitToMenu() {
         _gameState.value = GameState.Ready
     }
 
+    /**
+     * The main game loop, which updates the game state at a regular interval.
+     */
     private suspend fun gameLoop() {
         while (_gameState.value == GameState.Running) {
             delay(16) // Aim for ~60 FPS
@@ -168,6 +204,12 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
         }
     }
 
+    /**
+     * Called when the device's sensor data changes.
+     *
+     * @param newAccelX The new accelerometer X value.
+     * @param newAccelY The new accelerometer Y value.
+     */
     fun onSensorChanged(newAccelX: Float, newAccelY: Float) {
         accelX = newAccelX
         accelY = newAccelY
@@ -343,6 +385,9 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
         }
     }
 
+    /**
+     * Ends the game and transitions to the GameOver state.
+     */
     private fun endGame() {
         if (_gameState.value == GameState.Running) {
 //            _gameState.value = GameState.GameOver(score.value)
@@ -360,6 +405,11 @@ class GameManager(private val scoreRepository: ScoreRepository) : ViewModel() {
         }
     }
 
+    /**
+     * Submits the player's score to the online leaderboard.
+     *
+     * @param playerName The name of the player.
+     */
     fun submitScore(playerName: String) {
         viewModelScope.launch {
             scoreRepository.submitOnlineScore(playerName, finalScore.toInt())

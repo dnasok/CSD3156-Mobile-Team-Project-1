@@ -43,6 +43,12 @@ import com.example.team16_mobile_team_project_1.network.OnlineScore
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
+/**
+ * The main screen for the game, which displays the game state and handles user input.
+ *
+ * @param modifier The modifier to be applied to the screen.
+ * @param gameManager The GameManager that manages the game's state.
+ */
 @Composable
 fun GameScreen(
     modifier: Modifier = Modifier,
@@ -303,6 +309,18 @@ fun GameScreen(
     }
 }
 
+/**
+ * The canvas where the game is drawn.
+ *
+ * @param player The player object.
+ * @param cannons The list of cannon objects.
+ * @param cannonballs The list of cannonball objects.
+ * @param coin The coin object.
+ * @param playerImage The image for the player.
+ * @param enemyImage The image for the cannons.
+ * @param cannonballImage The image for the cannonballs.
+ * @param coinImage The image for the coin.
+ */
 @Composable
 fun GameCanvas(
     player: Player,
@@ -382,6 +400,12 @@ fun GameCanvas(
     }
 }
 
+/**
+ * The start menu of the game.
+ *
+ * @param onStartClick The action to perform when the start button is clicked.
+ * @param modifier The modifier to be applied to the menu.
+ */
 @Composable
 fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
@@ -410,6 +434,17 @@ fun StartMenu(onStartClick: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * The game over menu.
+ *
+ * @param onlineLeaderboard The list of online scores.
+ * @param score The player's score.
+ * @param highScore The player's high score.
+ * @param isNewHighScore Whether the player achieved a new high score.
+ * @param onRestartClick The action to perform when the restart button is clicked.
+ * @param onSubmitScore The action to perform when the submit score button is clicked.
+ * @param modifier The modifier to be applied to the menu.
+ */
 @Composable
 fun GameOverMenu(
     onlineLeaderboard: List<OnlineScore>,
@@ -563,6 +598,14 @@ fun GameOverMenu(
     }
 }
 
+/**
+ * The pause menu of the game.
+ *
+ * @param onResume The action to perform when the resume button is clicked.
+ * @param onRestart The action to perform when the restart button is clicked.
+ * @param onQuit The action to perform when the quit button is clicked.
+ * @param modifier The modifier to be applied to the menu.
+ */
 @Composable
 fun PauseMenu(
     onResume: () -> Unit,
@@ -650,6 +693,12 @@ private data class MenuBall(
     val r: Float = 12f
 )
 
+/**
+ * A background for the main menu, with cannonballs flying across the screen.
+ *
+ * @param modifier The modifier to be applied to the background.
+ * @param cannonballImage The image for the cannonballs.
+ */
 @Composable
 fun MenuCannonballBackground(
     modifier: Modifier = Modifier,
