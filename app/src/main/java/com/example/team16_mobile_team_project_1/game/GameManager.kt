@@ -134,12 +134,20 @@ class GameManager : ViewModel() {
             }
 
             _player.value.updatePosition(accelX, accelY)
+
             updateCannonballs()
             fireCannons()
             spawnMoreCannons()
-            checkCollisions()
-            checkCoinCollision()
-            checkKillZone()
+
+            if (_gameState.value == GameState.Running) {
+                checkCollisions()
+            }
+            if (_gameState.value == GameState.Running) {
+                checkCoinCollision()
+            }
+            if (_gameState.value == GameState.Running) {
+                checkKillZone()
+            }
         }
     }
 
