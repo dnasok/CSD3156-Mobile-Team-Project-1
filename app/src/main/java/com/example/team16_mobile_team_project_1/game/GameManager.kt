@@ -11,25 +11,6 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-// Data classes to hold the state of game objects
-data class CannonState(
-    val id: Int,
-    val x: Float,
-    val y: Float,
-    val angle: Float,
-    val radius: Float = 37.5f,
-    var nextFireTime: Long = 0L
-)
-
-data class CannonballState(
-    val id: Int,
-    val cannonId: Int,
-    val x: Float,
-    val y: Float,
-    val velocityX: Float,
-    val velocityY: Float,
-    val radius: Float = 15f
-)
 
 // Sealed interface to represent the different states of the game
 sealed interface GameState {
@@ -48,10 +29,10 @@ class GameManager : ViewModel() {
     private val _player = MutableStateFlow(Player(0f, 0f))
     val player = _player.asStateFlow()
 
-    private val _cannons = MutableStateFlow<List<CannonState>>(emptyList())
+    private val _cannons = MutableStateFlow<List<Cannon>>(emptyList())
     val cannons = _cannons.asStateFlow()
 
-    private val _cannonballs = MutableStateFlow<List<CannonballState>>(emptyList())
+    private val _cannonballs = MutableStateFlow<List<Cannonball>>(emptyList())
     val cannonballs = _cannonballs.asStateFlow()
 
     private val _coin = MutableStateFlow<Coin?>(null)
@@ -158,14 +139,14 @@ class GameManager : ViewModel() {
 
     private fun spawnInitialCannons() {
         val initialCannons = 7
-        val cannons = mutableListOf<CannonState>()
+        val cannons = mutableListOf<Cannon>()
         for (i in 0 until initialCannons) {
             cannons.add(spawnSingleCannon())
         }
         _cannons.value = cannons
     }
 
-    private fun spawnSingleCannon(): CannonState {
+    private fun spawnSingleCannon(): Cannon {
         val centerX = screenWidth / 2f
         val centerY = screenHeight / 2f
         val cannonRadius = 37.5f
@@ -199,7 +180,7 @@ class GameManager : ViewModel() {
         val angleToCenter =
             Math.toDegrees(kotlin.math.atan2(centerY - y, centerX - x).toDouble()).toFloat()
 
-        return CannonState(
+        return Cannon(
             id = nextCannonId++,
             x = x,
             y = y,
@@ -218,7 +199,7 @@ class GameManager : ViewModel() {
                 val speed = 7f + (gameTime / 15000f) // Increase speed over time
 
                 newCannonballs.add(
-                    CannonballState(
+                    Cannonball(
                         id = Random.nextInt(),
                         cannonId = cannon.id,
                         x = cannon.x,
